@@ -1,0 +1,5 @@
+flask-restful
+flask-jwt
+flask-sqlalchemy
+pymysql
+coveralls
