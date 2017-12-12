@@ -68,8 +68,9 @@ class TestAPI(unittest.TestCase):
         self.assertTrue(r.status_code == 200)
         self.assertTrue(json['metrics'] == [])
 
-        # add a metric
-        r, json = self.client.post('/metric/m1')
+        # add a metric 
+        data = {'description': 'string'}
+        r, json = self.client.post('/metric/m1', data=data)
         self.assertTrue(r.status_code == 201)
 
         # delete a metric
@@ -85,7 +86,8 @@ class TestAPI(unittest.TestCase):
     def test_measurement(self):
 
         # add a metric
-        r, json = self.client.post('/metric/m1')
+        data = {'description': 'string'}
+        r, json = self.client.post('/metric/m1', data=data)
         self.assertTrue(r.status_code == 201)
 
         # add measurement
