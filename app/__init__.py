@@ -2,6 +2,8 @@ from flask import Flask
 from flask_restful import Api
 from flask_jwt import JWT
 
+from flasgger import Swagger
+
 from .auth import authenticate, identity
 from .db import db
 from .resources.user import User, UserList, Register
@@ -23,6 +25,9 @@ def create_app(config):
 
     # register api resources
     api = Api(app)
+
+    # add api documentation
+    Swagger(app)
 
     api.add_resource(User, '/user/<string:username>')
     api.add_resource(UserList, '/users')
