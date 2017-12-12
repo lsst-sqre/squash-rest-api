@@ -1,9 +1,24 @@
-from flask_restful import Resource
+from flask_restful import Resource, reqparse
 
 from ..models import MetricModel
 
 
 class Metric(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('description',
+                        type=str,
+                        required=True,
+                        help="You must provide a description text associated "
+                             "to this metric."
+                        )
+    parser.add_argument('unit',
+                        type=str
+                        )
+    parser.add_argument('tags',
+                        type=dict)
+    parser.add_argument('reference',
+                        type=dict)
+
     def get(self, name):
         """
         Retrieve a single metric from SQuaSH
@@ -13,7 +28,7 @@ class Metric(Resource):
         parameters:
         - name: name
           in: path
-          description: metric name
+          description: Name of the metric
           required: true
         responses:
           200:
@@ -35,26 +50,39 @@ class Metric(Resource):
         parameters:
         - name: name
           in: path
-          description: metric name
+          description: Name of the metric
           required: true
+        - in: body
+          name: "Request body:"
+          schema:
+            type: object
+            required:
+              - description
+            properties:
+              description:
+                type: string
+              unit:
+                type: string
+              tags:
+                type: object
+              reference:
+                type: object
         responses:
           201:
             description: Metric successfully created
-            schema:
-              id: Metric
-              properties:
-                name:
-                  type: string
           400:
-            description: Metric already exist.
+            description: A metric whit this name already exists
           500:
-            description: An error occurred creating the metric
+            description: An error occurred creating this metric
         """
         if MetricModel.find_by_name(name):
             return {'message': "A metric with name '{}' already "
                                "exists.".format(name)}, 400
 
-        metric = MetricModel(name)
+        data = Metric.parser.parse_args()
+
+        metric = MetricModel(name, data['description'], data['unit'],
+                             data['tags'], data['reference'])
         try:
             metric.save_to_db()
         except:
