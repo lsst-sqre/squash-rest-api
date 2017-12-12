@@ -47,22 +47,47 @@ class UserModel(db.Model):
 
 
 class MetricModel(db.Model):
-    """Database model for squash metrics"""
+    """Database model for squash metrics as defined
+    in the lsst.verify package. See https://sqr-019.lsst.io/
+
+    name : `str`
+        Name of the metric.
+    description : `str`
+        Short description about the metric.
+    unit : `str`
+        Units of the metric. String representation of an astropy unit.
+        An empty string means an unitless quantity.
+    tags : `json`
+        Tags associated with this metric. Tags are strings
+        that can be used to group metrics.
+    reference: `json`, optional
+        reference to the original document that defines the metric
+        with a handle to the doc, url and page number.
+    """
 
     __tablename__ = 'metrics'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
+    description = db.Column(db.Text())
+    unit = db.Column(db.String(16))
+    tags = db.Column(JSON())
+    reference = db.Column(JSON())
 
-    measurements = db.relationship('MeasurementModel', lazy='dynamic')
-
-    def __init__(self, name):
+    def __init__(self, name, description, unit=None,
+                 tags=None, reference=None):
         self.name = name
+        self.description = description
+        self.unit = unit
+        self.tags = tags
+        self.reference = reference
 
     def json(self):
         return {'name': self.name,
-                'measurements': [measurement.json() for measurement in
-                                 self.measurements.all()]}
+                'description': self.description,
+                'unit': self.unit,
+                'tags': self.tags,
+                'reference': self.reference}
 
     @classmethod
     def find_by_name(cls, name):
