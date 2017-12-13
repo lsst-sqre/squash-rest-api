@@ -14,6 +14,8 @@ clean:
 test:
 	flake8 app tests
 	coverage run --source=app test.py
+run:
+	python run.py
 
 all: clean
 
