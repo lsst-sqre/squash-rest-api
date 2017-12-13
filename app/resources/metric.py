@@ -11,6 +11,12 @@ class Metric(Resource):
                         help="You must provide a description text associated "
                              "to this metric."
                         )
+    parser.add_argument('package',
+                        type=str,
+                        required=True,
+                        help="You must provide the package name associated "
+                             "to this metric."
+                        )
     parser.add_argument('unit',
                         type=str
                         )
@@ -63,6 +69,8 @@ class Metric(Resource):
             properties:
               description:
                 type: string
+              package:
+                type: string
               unit:
                 type: string
               tags:
@@ -83,8 +91,8 @@ class Metric(Resource):
 
         data = Metric.parser.parse_args()
 
-        metric = MetricModel(name, data['description'], data['unit'],
-                             data['tags'], data['reference'])
+        metric = MetricModel(name, data['description'], data['package'],
+                             data['unit'], data['tags'], data['reference'])
         try:
             metric.save_to_db()
         except:

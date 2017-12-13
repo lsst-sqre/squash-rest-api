@@ -63,21 +63,30 @@ class MetricModel(db.Model):
     reference: `json`, optional
         reference to the original document that defines the metric
         with a handle to the doc, url and page number.
+    package: name of the package that defines this metric
     """
 
     __tablename__ = 'metrics'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), nullable=False)
+    # Name of the metric
+    name = db.Column(db.String(64), nullable=False)
+    # Short description about the metric
     description = db.Column(db.Text())
+    # name of the package that defines the metric
+    package = db.Column(db.String(64), nullable=False)
+    # Units of the metric
     unit = db.Column(db.String(16))
+    # Tags associated with the metric
     tags = db.Column(JSON())
+    # reference to the original doc that defines the metric
     reference = db.Column(JSON())
 
-    def __init__(self, name, description, unit=None,
+    def __init__(self, name, description, package, unit=None,
                  tags=None, reference=None):
         self.name = name
         self.description = description
+        self.package = package
         self.unit = unit
         self.tags = tags
         self.reference = reference
@@ -85,6 +94,7 @@ class MetricModel(db.Model):
     def json(self):
         return {'name': self.name,
                 'description': self.description,
+                'package': self.package,
                 'unit': self.unit,
                 'tags': self.tags,
                 'reference': self.reference}
