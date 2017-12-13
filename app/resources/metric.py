@@ -14,8 +14,10 @@ class Metric(Resource):
     parser.add_argument('unit',
                         type=str
                         )
+    # accept multiple values
+    # http://flask-restful.readthedocs.io/en/0.3.5/reqparse.html
     parser.add_argument('tags',
-                        type=dict)
+                        type=str, action="append")
     parser.add_argument('reference',
                         type=dict)
 
@@ -64,7 +66,7 @@ class Metric(Resource):
               unit:
                 type: string
               tags:
-                type: object
+                type: array
               reference:
                 type: object
         responses:

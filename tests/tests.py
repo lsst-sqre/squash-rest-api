@@ -68,8 +68,8 @@ class TestAPI(unittest.TestCase):
         self.assertTrue(r.status_code == 200)
         self.assertTrue(json['metrics'] == [])
 
-        # add a metric 
-        data = {'description': 'string'}
+        # add a metric
+        data = {'description': 'string', 'tags': ['a', 'b', 'c']}
         r, json = self.client.post('/metric/m1', data=data)
         self.assertTrue(r.status_code == 201)
 
