@@ -69,7 +69,9 @@ class TestAPI(unittest.TestCase):
         self.assertTrue(json['metrics'] == [])
 
         # add a metric
-        data = {'description': 'string', 'tags': ['a', 'b', 'c']}
+        data = {'description': 'string',
+                'package': 'string',
+                'tags': ['a', 'b', 'c']}
         r, json = self.client.post('/metric/m1', data=data)
         self.assertTrue(r.status_code == 201)
 
@@ -86,7 +88,8 @@ class TestAPI(unittest.TestCase):
     def test_measurement(self):
 
         # add a metric
-        data = {'description': 'string'}
+        data = {'description': 'string',
+                'package': 'string'}
         r, json = self.client.post('/metric/m1', data=data)
         self.assertTrue(r.status_code == 201)
 
