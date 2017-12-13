@@ -1,5 +1,5 @@
 PATH:=bin/:${PATH}
-.PHONY: all clean test
+.PHONY: all clean test run
 
 help:
 	@echo "Available commands:"
@@ -14,7 +14,8 @@ clean:
 test:
 	flake8 app tests
 	coverage run --source=app test.py
-run:
+
+run: test
 	python run.py
 
 all: clean
