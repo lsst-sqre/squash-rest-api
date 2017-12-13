@@ -30,7 +30,7 @@ class Metric(Resource):
         parameters:
         - name: name
           in: path
-          description: Name of the metric
+          description: name of the metric
           required: true
         responses:
           200:
@@ -52,7 +52,7 @@ class Metric(Resource):
         parameters:
         - name: name
           in: path
-          description: Name of the metric
+          description: name of the metric
           required: true
         - in: body
           name: "Request body:"
@@ -102,7 +102,7 @@ class Metric(Resource):
         parameters:
         - name: name
           in: path
-          description: metric name
+          description: name of the metric
           required: true
         responses:
           200:
