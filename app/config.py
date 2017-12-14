@@ -23,7 +23,7 @@ class Config(object):
         "description": "RESTful API for the LSST SQuaSH metrics harness "
                        "system. You can find out more about SQuaSH at "
                        "https://sqr-009.lsst.io",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "termsOfService": None,
         "uiversion": 3
     }
