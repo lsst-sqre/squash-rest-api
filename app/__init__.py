@@ -8,6 +8,7 @@ from .auth import authenticate, identity
 from .db import db
 from .resources.user import User, UserList, Register
 from .resources.metric import Metric, MetricList
+from .resources.specification import Specification, SpecificationList
 from .resources.measurement import Measurement, MeasurementList
 
 
@@ -34,6 +35,8 @@ def create_app(config):
     api.add_resource(Register, '/register')
     api.add_resource(Metric, '/metric/<string:name>')
     api.add_resource(MetricList, '/metrics')
+    api.add_resource(Specification, '/specification/<string:name>')
+    api.add_resource(SpecificationList, '/specifications')
     api.add_resource(Measurement, '/measurement/<string:job>')
     api.add_resource(MeasurementList, '/measurements')
 

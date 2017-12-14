@@ -57,30 +57,32 @@ class MetricModel(db.Model):
     unit : `str`
         Units of the metric. String representation of an astropy unit.
         An empty string means an unitless quantity.
-    tags : `json`
+    tags : `list`
         Tags associated with this metric. Tags are strings
         that can be used to group metrics.
-    reference: `json`, optional
+    reference: `dict`, optional
         reference to the original document that defines the metric
-        with a handle to the doc, url and page number.
+        usually with a handle to the document, its url and page number.
     package: name of the package that defines this metric
     """
 
     __tablename__ = 'metrics'
 
     id = db.Column(db.Integer, primary_key=True)
-    # Name of the metric
+    # name of the metric
     name = db.Column(db.String(64), nullable=False)
-    # Short description about the metric
+    # short description about the metric
     description = db.Column(db.Text())
     # name of the package that defines the metric
     package = db.Column(db.String(64), nullable=False)
-    # Units of the metric
+    # units of the metric
     unit = db.Column(db.String(16))
-    # Tags associated with the metric
+    # tags associated with the metric
     tags = db.Column(JSON())
     # reference to the original doc that defines the metric
     reference = db.Column(JSON())
+
+    specification = db.relationship('SpecificationModel')
 
     def __init__(self, name, description, package, unit=None,
                  tags=None, reference=None):
@@ -98,6 +100,73 @@ class MetricModel(db.Model):
                 'unit': self.unit,
                 'tags': self.tags,
                 'reference': self.reference}
+
+    @classmethod
+    def find_by_name(cls, name):
+        return cls.query.filter_by(name=name).first()
+
+    @classmethod
+    def find_by_fqn(cls, package, name):
+        return cls.query.filter_by(package=package, name=name).first()
+
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete_from_db(self):
+        db.session.delete(self)
+        db.session.commit()
+
+
+class SpecificationModel(db.Model):
+    """Database model for metrics specifications as defined
+    in the lsst.verify package. See https://sqr-019.lsst.io/
+
+    id: `int`
+        Id of the specification
+    name : `str`
+        Name of the specification
+    metric_id : `integer`
+        Id of the metric this specification applies to
+    threshold : `dict`
+        defines the specification, usually the threshold
+        field has an operator, value and unit keys.
+    tags : `list`
+        Tags associated with this specification
+    metadata_query: `dict`
+        Additional metadata information that can be tested
+        against the job metadata
+    """
+
+    __tablename__ = 'specifications'
+
+    # id of the specification
+    id = db.Column(db.Integer, primary_key=True)
+    # name of the specification
+    name = db.Column(db.String(64), nullable=False)
+    # id of the metric this specification applies to
+    metric_id = db.Column(db.Integer, db.ForeignKey('metrics.id'))
+    # defines the specification test
+    threshold = db.Column(JSON())
+    # tags associated with this specification
+    tags = db.Column(JSON())
+    # additional metadata information
+    metadata_query = db.Column(JSON())
+
+    def __init__(self, name, metric_id, threshold=None, tags=None,
+                 metadata_query=None):
+
+        self.name = name
+        self.metric_id = metric_id
+        self.threshold = threshold
+        self.tags = tags
+        self.metadata_query = metadata_query
+
+    def json(self):
+        return {'name': self.name,
+                'threshold': self.threshold,
+                'tags': self.tags,
+                'metadata_query': self.metadata_query}
 
     @classmethod
     def find_by_name(cls, name):
@@ -126,10 +195,8 @@ class MeasurementModel(db.Model):
     value = db.Column(db.Float())
     data = db.Column(JSON())
 
-    metric_id = db.Column(db.Integer, db.ForeignKey('metrics.id'))
-    metric = db.relationship('MetricModel')
-
     def __init__(self, metric_name, job, value, data):
+
         metric = MetricModel.find_by_name(metric_name)
 
         if metric:

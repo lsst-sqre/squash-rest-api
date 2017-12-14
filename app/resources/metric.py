@@ -23,16 +23,18 @@ class Metric(Resource):
     # accept multiple values
     # http://flask-restful.readthedocs.io/en/0.3.5/reqparse.html
     parser.add_argument('tags',
-                        type=str, action="append")
+                        type=str, action="append"
+                        )
     parser.add_argument('reference',
-                        type=dict)
+                        type=dict
+                        )
 
     def get(self, name):
         """
-        Retrieve a single metric from SQuaSH
+        Retrieve a single metric
         ---
         tags:
-          - Metric
+          - Metrics
         parameters:
         - name: name
           in: path
@@ -45,16 +47,19 @@ class Metric(Resource):
             description: Metric not found
         """
         metric = MetricModel.find_by_name(name)
+
+        # TODO: if more than one metric found return fqn
+
         if metric:
             return metric.json()
         return {'message': 'Metric not found'}, 404
 
     def post(self, name):
         """
-        Create a single SQuaSH metric
+        Create a single metric
         ---
         tags:
-          - Metric
+          - Metrics
         parameters:
         - name: name
           in: path
@@ -85,13 +90,17 @@ class Metric(Resource):
           500:
             description: An error occurred creating this metric
         """
-        if MetricModel.find_by_name(name):
-            return {'message': "A metric with name '{}' already "
-                               "exists.".format(name)}, 400
 
         data = Metric.parser.parse_args()
 
-        metric = MetricModel(name, data['description'], data['package'],
+        package = data['package']
+
+        # Metric names are unique inside a package
+        if MetricModel.find_by_fqn(package, name):
+            return {'message': "A metric with name '{}.{}' already "
+                               "exists.".format(package, name)}, 400
+
+        metric = MetricModel(name, data['description'], package,
                              data['unit'], data['tags'], data['reference'])
         try:
             metric.save_to_db()
@@ -103,10 +112,10 @@ class Metric(Resource):
 
     def delete(self, name):
         """
-        Delete a single SQuaSH metric
+        Delete a single metric
         ---
         tags:
-          - Metric
+          - Metrics
         parameters:
         - name: name
           in: path
@@ -118,6 +127,9 @@ class Metric(Resource):
           400:
             description: Metric does not exist
         """
+
+        # TODO: use package info to build a fqn
+
         metric = MetricModel.find_by_name(name)
         if not metric:
             return {"message": "Metric {} does not exist.".format(name)}
@@ -129,13 +141,13 @@ class Metric(Resource):
 class MetricList(Resource):
     def get(self):
         """
-        Retrieve the complete list of SQuaSH metrics
+        Retrieve the complete list of metrics
         ---
         tags:
           - Metrics
         responses:
           200:
-            description: List of SQuaSH metrics
+            description: List of SQuaSH metrics successfully retrieved
         """
         return {'metrics': [metric.json() for metric
                             in MetricModel.query.all()]}
