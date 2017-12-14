@@ -7,9 +7,6 @@ class Metric(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('description',
                         type=str,
-                        required=True,
-                        help="You must provide a description text associated "
-                             "to this metric."
                         )
     parser.add_argument('package',
                         type=str,
@@ -46,12 +43,11 @@ class Metric(Resource):
           404:
             description: Metric not found
         """
-        metric = MetricModel.find_by_name(name)
+        metrics = MetricModel.find_by_name(name)
 
-        # TODO: if more than one metric found return fqn
+        if metrics:
+            return {'metrics': [metric.json() for metric in metrics]}
 
-        if metric:
-            return metric.json()
         return {'message': 'Metric not found'}, 404
 
     def post(self, name):
@@ -121,18 +117,22 @@ class Metric(Resource):
           in: path
           description: name of the metric
           required: true
+        - name: package
+          in: query
+          description: name of the package associated with the metric
+          required: true
         responses:
           200:
             description: Metric deleted
           400:
             description: Metric does not exist
         """
+        data = Metric.parser.parse_args()
+        package = data['package']
 
-        # TODO: use package info to build a fqn
-
-        metric = MetricModel.find_by_name(name)
+        metric = MetricModel.find_by_fqn(package, name)
         if not metric:
-            return {"message": "Metric {} does not exist.".format(name)}
+            return {"message": "Metric '{}.{}' does not exist.".format(package, name)}
 
         metric.delete_from_db()
         return {'message': 'Metric deleted.'}
