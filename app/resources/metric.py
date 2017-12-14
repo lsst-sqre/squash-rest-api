@@ -132,7 +132,8 @@ class Metric(Resource):
 
         metric = MetricModel.find_by_fqn(package, name)
         if not metric:
-            return {"message": "Metric '{}.{}' does not exist.".format(package, name)}
+            return {"message": "Metric '{}.{}' does not "
+                               "exist.".format(package, name)}
 
         metric.delete_from_db()
         return {'message': 'Metric deleted.'}

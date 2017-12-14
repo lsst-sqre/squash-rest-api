@@ -17,6 +17,12 @@ class Measurement(Resource):
                         help="You must provide a metric name associated "
                              "to the measurement."
                         )
+    parser.add_argument('package',
+                        type=str,
+                        required=True,
+                        help="You must provide a package associated "
+                             "to the metric measurement."
+                        )
     parser.add_argument('data',
                         type=str,
                         required=True,
@@ -34,8 +40,8 @@ class Measurement(Resource):
 
         data = Measurement.parser.parse_args()
 
-        measurement = MeasurementModel(data['metric_name'], job,
-                                       data['value'], data['data'])
+        measurement = MeasurementModel(data['metric_name'], data['package'],
+                                       job, data['value'], data['data'])
 
         try:
             measurement.save_to_db()

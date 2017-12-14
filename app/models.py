@@ -195,14 +195,15 @@ class MeasurementModel(db.Model):
     value = db.Column(db.Float())
     data = db.Column(JSON())
 
-    def __init__(self, metric_name, job, value, data):
+    def __init__(self, metric_name, package, job, value, data):
 
-        metric = MetricModel.find_by_name(metric_name)
+        metric = MetricModel.find_by_fqn(package, metric_name)
 
         if metric:
             self.metric_id = metric.id
         else:
-            return {'message': 'Metric {} not found.'.format(metric_name)}, 404
+            return {"message": "Metric '{}.{}' not "
+                               "found.".format(package, metric_name)}, 404
 
         self.job = job
         self.value = value
