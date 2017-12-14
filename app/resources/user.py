@@ -21,6 +21,31 @@ class Register(Resource):
 
     @jwt_required()
     def post(self):
+        """
+            Create a user in SQuaSH
+            ---
+            tags:
+              - Users
+            parameters:
+            - name: "Request body:"
+              in: body
+              schema:
+                type: object
+                required:
+                  - username
+                    password
+                properties:
+                  username:
+                    type: string
+                  password:
+                    type: string
+                  # TODO: Add auth token
+            responses:
+              201:
+                description: User created
+              400:
+                description: User already exist
+        """
         data = Register.parser.parse_args()
 
         if UserModel.find_by_username(data['username']):
@@ -35,6 +60,22 @@ class Register(Resource):
 class User(Resource):
 
     def get(self, username):
+        """
+        Retrieve a single user from SQuaSH
+        ---
+        tags:
+          - Users
+        parameters:
+          - name: username
+            in: path
+            description: name of the user
+            required: true
+        responses:
+          200:
+            description: User found
+          404:
+            description: User not found
+        """
         user = UserModel.find_by_username(username)
         if user:
             user.json()
@@ -53,5 +94,14 @@ class User(Resource):
 class UserList(Resource):
 
     def get(self):
+        """
+        Retrieve the complete list of SQuaSH users
+        ---
+        tags:
+          - Users
+        responses:
+          200:
+            description: List of SQuaSH users successfully retrieved
+        """
         return {"users": [user.json()['username'] for user
                           in UserModel.query.all()]}
