@@ -10,14 +10,9 @@ class Job(Resource):
     parser.add_argument('measurements',
                         type=dict,
                         action="append",
-                        required=True,
-                        help="You must provide a list of measurements associated "
-                             "to this job."
                         )
     parser.add_argument('meta',
                         type=dict,
-                        required=True,
-                        help="You must provide metadata associated to this job"
                         )
 
     def get(self, ci_id):
@@ -94,45 +89,44 @@ class Job(Resource):
             message = "An error ocurred creating job `{}`".format(ci_id)
             return {"message": message, "error": str(error)}, 500
 
-        if None in data['measurements']:
-            return {"message": "You must provide a list of measurements"
-                               " associated to this job."}
-
         # Insert measurements for this job
-        for measurement in data['measurements']:
 
-            if 'metric_name' in measurement:
-                metric_name = measurement['metric_name']
-            else:
-                return {"message": "You must provide a metric name associated "
-                                   "with this measurement."}, 400
+        if data['measurements']:
 
-            # Find the associated metric
-            metric = MetricModel.find_by_name(metric_name)
+            for measurement in data['measurements']:
 
-            if metric:
-                measurement = MeasurementModel(measurement['value'],
-                                               metric.id, job.id)
-            else:
-                message = "Metric `{}` not found, it looks like an " \
-                          "update of the metrics is " \
-                          "required.".format(metric_name)
+                if measurement and 'metric_name' in measurement:
+                    metric_name = measurement['metric_name']
+                else:
+                    return {"message": "You must provide a metric name "
+                                       "associated with this "
+                                       "measurement."}, 400
 
-                return {"message": message}, 404
+                # Find the associated metric
+                metric = MetricModel.find_by_name(metric_name)
 
-            try:
-                measurement.save_to_db()
-            except Exception as error:
+                if metric:
+                    measurement = MeasurementModel(job.id, metric.id,
+                                                   **measurement)
+                else:
+                    message = "Metric `{}` not found, it looks like an " \
+                              "update of the metrics is " \
+                              "required.".format(metric_name)
 
-                message = "An error occurred inserting measurements for " \
-                          "job `{}`.".format(ci_id)
+                    return {"message": message}, 404
 
-                return {"message": message, "error": str(error)}, 500
+                try:
+                    measurement.save_to_db()
+                except Exception as error:
+
+                    message = "An error occurred inserting measurements for " \
+                              "job `{}`.".format(ci_id)
+
+                    return {"message": message, "error": str(error)}, 500
 
         # TODO: Insert blobs
 
         return job.json(), 201
-
 
     def delete(self, ci_id):
         """
@@ -177,4 +171,3 @@ class JobList(Resource):
         jobs = [job.json_summary() for job in JobModel.query.all()]
 
         return {'jobs': jobs}
-
