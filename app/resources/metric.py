@@ -7,12 +7,12 @@ class Metric(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('description',
                         type=str,
-                        )
-    parser.add_argument('package',
-                        type=str,
                         required=True,
                         help="You must provide the package name associated "
                              "to this metric."
+                        )
+    parser.add_argument('package',
+                        type=str
                         )
     parser.add_argument('unit',
                         type=str
@@ -28,14 +28,14 @@ class Metric(Resource):
 
     def get(self, name):
         """
-        Retrieve a single metric
+        Retrieve a single metric by it's name
         ---
         tags:
           - Metrics
         parameters:
         - name: name
           in: path
-          description: name of the metric
+          description: Full qualified name of the metric, e.g. validate_drp.AM1
           required: true
         responses:
           200:
@@ -43,10 +43,10 @@ class Metric(Resource):
           404:
             description: Metric not found
         """
-        metrics = MetricModel.find_by_name(name)
+        metric = MetricModel.find_by_name(name)
 
-        if metrics:
-            return {'metrics': [metric.json() for metric in metrics]}
+        if metric:
+            return metric.json()
 
         return {'message': 'Metric not found'}, 404
 
@@ -59,7 +59,7 @@ class Metric(Resource):
         parameters:
         - name: name
           in: path
-          description: name of the metric
+          description: Full qualified name of the metric, e.g. validate_drp.AM1
           required: true
         - in: body
           name: "Request body:"
@@ -69,8 +69,6 @@ class Metric(Resource):
               - description
             properties:
               description:
-                type: string
-              package:
                 type: string
               unit:
                 type: string
@@ -82,27 +80,36 @@ class Metric(Resource):
           201:
             description: Metric successfully created
           400:
-            description: A metric whit this name already exists
+            description: A metric with this name already exists
           500:
             description: An error occurred creating this metric
         """
 
         data = Metric.parser.parse_args()
 
-        package = data['package']
+        if "." in name:
+            data['package'], data['display_name'] = name.split(".")
+        else:
+            message = "You must provide a full qualified name for" \
+                      " the metric, e.g. validate_drp.AM1"
 
-        # Metric names are unique inside a package
-        if MetricModel.find_by_fqn(package, name):
-            return {'message': "A metric with name '{}.{}' already "
-                               "exists.".format(package, name)}, 400
+            return {"message": message }
 
-        metric = MetricModel(name, data['description'], package,
-                             data['unit'], data['tags'], data['reference'])
+        # Metric names are unique
+        if MetricModel.find_by_name(name):
+
+            message = "A metric with name `{}` already exist.".format(name)
+            return {'message': message}, 400
+
+
+        metric = MetricModel(name, **data)
+
         try:
             metric.save_to_db()
         except:
-            return {"message": "An error occurred creating "
-                               "metric '{}'.".format(name)}, 500
+
+            message = "An error ocurred creating metric `{}`.".format(name)
+            return {"message": message}, 500
 
         return metric.json(), 201
 
@@ -115,11 +122,7 @@ class Metric(Resource):
         parameters:
         - name: name
           in: path
-          description: name of the metric
-          required: true
-        - name: package
-          in: query
-          description: name of the package associated with the metric
+          description: Full qualified name of the metric, e.g. validate_drp.AM1
           required: true
         responses:
           200:
@@ -127,13 +130,11 @@ class Metric(Resource):
           400:
             description: Metric does not exist
         """
-        data = Metric.parser.parse_args()
-        package = data['package']
 
-        metric = MetricModel.find_by_fqn(package, name)
+        metric = MetricModel.find_by_name(name)
         if not metric:
-            return {"message": "Metric '{}.{}' does not "
-                               "exist.".format(package, name)}
+            return {"message": "Metric '{}' does not "
+                               "exist.".format(name)}
 
         metric.delete_from_db()
         return {'message': 'Metric deleted.'}
@@ -148,7 +149,7 @@ class MetricList(Resource):
           - Metrics
         responses:
           200:
-            description: List of SQuaSH metrics successfully retrieved
+            description: List of metrics successfully retrieved
         """
         return {'metrics': [metric.json() for metric
                             in MetricModel.query.all()]}

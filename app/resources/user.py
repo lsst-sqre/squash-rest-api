@@ -85,7 +85,10 @@ class User(Resource):
     def delete(self, username):
         user = UserModel.find_by_username(username)
         if not user:
-            return {"message": "Username {} does not exist".format(username)}
+
+            message = "Username `{}` not found.".format(username)
+
+            return {"message": message}
 
         user.delete_from_db()
         return {"message": "User deleted."}
@@ -101,7 +104,7 @@ class UserList(Resource):
           - Users
         responses:
           200:
-            description: List of SQuaSH users successfully retrieved
+            description: List of users successfully retrieved
         """
         return {"users": [user.json()['username'] for user
                           in UserModel.query.all()]}

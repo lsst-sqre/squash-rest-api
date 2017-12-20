@@ -5,18 +5,6 @@ from ..models import SpecificationModel, MetricModel
 
 class Specification(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument('package',
-                        type=str,
-                        required=True,
-                        help="You must provide the package name associated "
-                             "to this specification."
-                        )
-    parser.add_argument('metric_name',
-                        type=str,
-                        required=True,
-                        help="You must provide the name of the metric"
-                             " associated to this specification."
-                        )
     parser.add_argument('threshold',
                         type=dict
                         )
@@ -34,11 +22,13 @@ class Specification(Resource):
         Retrieve a single metric specification
         ---
         tags:
-          - Specifications
+          - Metric Specifications
         parameters:
         - name: name
           in: path
-          description: name of the metric
+          description: >
+            Full qualified name of the metric specification, e.g.
+            validate_drp.AM1.minimum_gri
           required: true
         responses:
           200:
@@ -56,24 +46,19 @@ class Specification(Resource):
         Create a metric specification
         ---
         tags:
-          - Specifications
+          - Metric Specifications
         parameters:
         - name: name
           in: path
-          description: name of the metric specification
+          description: >
+            Full qualified name of the metric specification, e.g.
+            validate_drp.AM1.mininum_gri
           required: true
         - in: body
           name: "Request body:"
           schema:
             type: object
-            required:
-              - metric_name
-                package
             properties:
-              metric_name:
-                type: string
-              package:
-                type: string
               threshold:
                 type: object
               tags:
@@ -91,33 +76,44 @@ class Specification(Resource):
 
         data = Specification.parser.parse_args()
 
-        package = data['package']
-        metric_name = data['metric_name']
+        if '.' in name:
+            metric_name = name.rsplit('.', 1)[0]
+        else:
+            message = "You must provide a full qualified name for the" \
+                      " specification, e.g. validate_drp.AM1.minimum_gri."
 
-        # Check if the associated package.metric exists
-        metric = MetricModel.find_by_fqn(package, metric_name)
+            return {"message": message}
+
+        # Check if the associated metric exists
+        metric = MetricModel.find_by_name(metric_name)
 
         if metric:
             metric_id = metric.id
         else:
-            return {'message': 'Metric {}.{} not found. You must provide a '
-                               'valid package and metric name to associtate '
-                               'with this '
-                               'specification.'.format(package,
-                                                       metric_name)}, 404
+
+            message = "Metric `{}` not found. You must provide a valid " \
+                      "name for the metric associated with this " \
+                      "specification.".format(metric_name)
+
+            return {"message": message}, 404
 
         if SpecificationModel.find_by_name(name):
-            return {'message': "A specification with name '{}' already "
-                               "exists.".format(name)}, 400
 
-        spec = SpecificationModel(name, metric_id,
-                                  data['threshold'], data['tags'],
-                                  data['metadata_query'])
+            message = "A specification with name `{}` already " \
+                      "exist.".format(name)
+
+            return {'message': message}, 400
+
+        spec = SpecificationModel(name, metric_id, **data)
+
         try:
             spec.save_to_db()
         except:
-            return {"message": "An error occurred creating "
-                               "metric specification '{}'.".format(name)}, 500
+
+            message = "An error ocurred creating this metric " \
+                      "specification".format(name)
+
+            return {"message": message}, 500
 
         return spec.json(), 201
 
@@ -126,22 +122,28 @@ class Specification(Resource):
         Delete a single metric specification
         ---
         tags:
-          - Specifications
+          - Metric Specifications
         parameters:
         - name: name
           in: path
-          description: name of the metric specification
+          description: >
+            Full qualified name of the metric specification, e.g.
+            validate_drp.AM1.mininum_gri
           required: true
         responses:
           200:
             description: Metric specification deleted
           400:
-            description: Metric specification does not exist
+            description: Metric specification not found
         """
         spec = SpecificationModel.find_by_name(name)
+
         if not spec:
-            return {"message": "Metric specification {} does "
-                               "not exist.".format(name)}
+
+            message = "The metric specification `{}` not " \
+                      "found.".format(name)
+
+            return {"message": message}, 404
 
         spec.delete_from_db()
         return {'message': 'Metric specification deleted.'}
@@ -153,7 +155,7 @@ class SpecificationList(Resource):
         Retrieve the complete list of metric specifications
         ---
         tags:
-          - Specifications
+          - Metric Specifications
         responses:
           200:
             description: List of metric specifications successfully retrieved
