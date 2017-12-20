@@ -93,14 +93,13 @@ class Metric(Resource):
             message = "You must provide a full qualified name for" \
                       " the metric, e.g. validate_drp.AM1"
 
-            return {"message": message }
+            return {"message": message}
 
         # Metric names are unique
         if MetricModel.find_by_name(name):
 
             message = "A metric with name `{}` already exist.".format(name)
             return {'message': message}, 400
-
 
         metric = MetricModel(name, **data)
 
