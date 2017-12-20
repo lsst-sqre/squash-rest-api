@@ -1,5 +1,5 @@
 from flask_restful import Resource, reqparse
-from flask_jwt import jwt_required
+# from flask_jwt import jwt_required
 
 from ..models import MeasurementModel, JobModel, MetricModel
 
@@ -98,7 +98,7 @@ class Measurement(Resource):
             return {'message': message}, 404
 
         if metric:
-            measurement = MeasurementModel(metric.id, job.id, **data)
+            measurement = MeasurementModel(job.id, metric.id, **data)
         else:
             message = "Metric `{}` not found.".format(metric_name)
 

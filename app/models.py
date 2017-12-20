@@ -234,6 +234,7 @@ class JobModel(db.Model):
         return {'ci_id': self.ci_id,
                 'measurements': [measurement.json() for measurement
                                  in self.measurements.all()]}
+
     def json_summary(self):
         return {'ci_id': self.ci_id}
 
@@ -291,6 +292,7 @@ class PackageModel(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+
 class MeasurementModel(db.Model):
     """Database model for metric measurements"""
 
@@ -298,18 +300,23 @@ class MeasurementModel(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     value = db.Column(db.Float)
+    # Full qualified name of the metric including the package
+    # name, e.g. validate_drp.AM1
+    metric_name = db.Column(db.String(64), nullable=False)
 
     metric_id = db.Column(db.Integer, db.ForeignKey('metric.id'))
     job_id = db.Column(db.Integer, db.ForeignKey('job.id'))
 
-    def __init__(self, job_id, metric_id, value=None):
+    def __init__(self, job_id, metric_id, value=None, metric_name=''):
 
         self.job_id = job_id
         self.metric_id = metric_id
         self.value = value
+        self.metric_name = metric_name
 
     def json(self):
-        return {'value': self.value}
+        return {'value': self.value,
+                'metric_name': self.metric_name}
 
     @classmethod
     # A job can have multiple measurements
