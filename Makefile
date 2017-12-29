@@ -4,7 +4,8 @@ PATH:=bin/:${PATH}
 help:
 	@echo "Available commands:"
 	@echo "  clean			remove temp files"
-	@echo "  test			run all tests and generate test coverage"
+	@echo "  test			run tests and generate test coverage"
+	@echo "  run			run tests and run the app in development mode"
 
 clean:
 	find ./ -type f -name '*.pyc' -exec rm -f {} \;
@@ -17,6 +18,3 @@ test:
 
 run: test
 	python run.py
-
-all: clean
-
