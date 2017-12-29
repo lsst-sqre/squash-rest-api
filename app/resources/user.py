@@ -22,29 +22,29 @@ class Register(Resource):
     @jwt_required()
     def post(self):
         """
-            Create a user in SQuaSH
-            ---
-            tags:
-              - Users
-            parameters:
-            - name: "Request body:"
-              in: body
-              schema:
-                type: object
-                required:
-                  - username
-                    password
-                properties:
-                  username:
-                    type: string
-                  password:
-                    type: string
-                  # TODO: Add auth token
-            responses:
-              201:
-                description: User created
-              400:
-                description: User already exist
+        Create a SQuaSH user.
+        ---
+        tags:
+          - Users
+        parameters:
+        - name: "Request body:"
+          in: body
+          schema:
+            type: object
+            required:
+              - username
+                password
+            properties:
+              username:
+                type: string
+              password:
+                type: string
+              # TODO: Add auth token
+        responses:
+          201:
+            description: User created
+          400:
+            description: User already exist
         """
         data = Register.parser.parse_args()
 
@@ -61,13 +61,14 @@ class User(Resource):
 
     def get(self, username):
         """
-        Retrieve a single user from SQuaSH
+        Retrieve a user from SQuaSH.
         ---
         tags:
           - Users
         parameters:
           - name: username
             in: path
+            type: string
             description: name of the user
             required: true
         responses:
@@ -98,7 +99,7 @@ class UserList(Resource):
 
     def get(self):
         """
-        Retrieve the complete list of SQuaSH users
+        Retrieve the complete list of SQuaSH users.
         ---
         tags:
           - Users

@@ -28,13 +28,14 @@ class Metric(Resource):
 
     def get(self, name):
         """
-        Retrieve a single metric by it's name
+        Retrieve a metric from its name.
         ---
         tags:
           - Metrics
         parameters:
         - name: name
           in: path
+          type: string
           description: Full qualified name of the metric, e.g. validate_drp.AM1
           required: true
         responses:
@@ -52,13 +53,14 @@ class Metric(Resource):
 
     def post(self, name):
         """
-        Create a single metric
+        Create a metric.
         ---
         tags:
           - Metrics
         parameters:
         - name: name
           in: path
+          type: string
           description: Full qualified name of the metric, e.g. validate_drp.AM1
           required: true
         - in: body
@@ -114,13 +116,14 @@ class Metric(Resource):
 
     def delete(self, name):
         """
-        Delete a single metric
+        Delete a metric.
         ---
         tags:
           - Metrics
         parameters:
         - name: name
           in: path
+          type: string
           description: Full qualified name of the metric, e.g. validate_drp.AM1
           required: true
         responses:
@@ -140,9 +143,15 @@ class Metric(Resource):
 
 
 class MetricList(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument("metrics",
+                        type=dict,
+                        action="append"
+                        )
+
     def get(self):
         """
-        Retrieve the complete list of metrics
+        Retrieve the complete list of metrics.
         ---
         tags:
           - Metrics
@@ -152,3 +161,59 @@ class MetricList(Resource):
         """
         return {'metrics': [metric.json() for metric
                             in MetricModel.query.all()]}
+
+    def post(self):
+        """
+        Create a list of metrics.
+        ---
+        tags:
+          - Metrics
+        parameters:
+        - name: "Request body:"
+          in: body
+          schema:
+            type: object
+            required:
+              - metrics
+            properties:
+              metrics:
+                type: array
+        responses:
+          201:
+            description: List of metrics successfully loaded
+          400:
+            description: Metric already exists
+          500:
+            description: An error occurred loading the metrics
+        """
+
+        metrics = MetricList.parser.parse_args()['metrics']
+
+        for data in metrics:
+
+            name = data['name']
+
+            if "." in name:
+                data['package'], data['display_name'] = name.split(".")
+            else:
+                message = "You must provide a full qualified name for" \
+                          " the metric, e.g. validate_drp.AM1"
+
+                return {"message": message}
+
+            if MetricModel.find_by_name(name):
+                message = "A metric with name `{}` already exist.".format(name)
+                return {'message': message}, 400
+
+            metric = MetricModel(**data)
+
+            try:
+                metric.save_to_db()
+            except Exception as error:
+
+                message = "An error occurred inserting metric "\
+                          "`{}`.".format(name)
+
+                return {"message": message, "error": str(error)}, 500
+
+        return {"message": "List of metrics successfully loaded."}

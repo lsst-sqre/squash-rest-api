@@ -11,23 +11,29 @@ class Measurement(Resource):
                         required=True,
                         help="This field cannot be left blank."
                         )
-    parser.add_argument('metric_name',
+    parser.add_argument('unit',
+                        type=str,
+                        required=True,
+                        help="This field cannot be left blank."
+                        )
+    parser.add_argument('metric',
                         type=str,
                         required=True,
                         help="You must provide a metric name associated "
                              "to the measurement."
                         )
 
-    def get(self, ci_id):
+    def get(self, job_id):
         """
-        Retrieve all measurements for this CI run
+        Retrieve all measurements performed by a verification job.
         ---
         tags:
           - Metric Measurements
         parameters:
-        - name: ci_id
+        - name: job_id
           in: path
-          description: ID of the CI run
+          type: integer
+          description: ID of the job
           required: true
         responses:
           200:
@@ -37,7 +43,7 @@ class Measurement(Resource):
         """
 
         # find the corresponding job
-        job = JobModel.find_by_ci_id(ci_id)
+        job = JobModel.find_by_id(job_id)
 
         if job:
             # find the associated measurements
@@ -46,34 +52,38 @@ class Measurement(Resource):
             return {'measurements': [measurement.json() for measurement
                                      in measurements]}
         else:
-            message = 'Job `{}` not found.'.format(ci_id)
+            message = 'Job `{}` not found.'.format(job_id)
 
             return {'message': message}, 404
 
     # @jwt_required()
-    def post(self, ci_id):
+    def post(self, job_id):
         """
-       Create a new measurement associated to an existing CI run
+       Create a new measurement for an existing job.
        ---
        tags:
          - Metric Measurements
        parameters:
-       - name: ci_id
+       - name: job_id
          in: path
-         description: ID of the CI run, used to identify a lsst.verify Job
+         type: integer
+         description: ID of the job
          required: true
        - in: body
          name: "Request body:"
          schema:
            type: object
            required:
-             - metric_name
+             - metric
              - value
+             - unit
            properties:
-             metric_name:
+             metric:
                type: string
              value:
                type: number
+             unit:
+               type: string
        responses:
          201:
            description: Measurement successfully created
@@ -86,14 +96,14 @@ class Measurement(Resource):
         data = Measurement.parser.parse_args()
 
         # find the corresponding job
-        job = JobModel.find_by_ci_id(ci_id)
+        job = JobModel.find_by_id(job_id)
 
         if job:
-            metric_name = data['metric_name']
+            metric_name = data['metric']
             # find the associated metric
             metric = MetricModel.find_by_name(metric_name)
         else:
-            message = "Job `{}` not found.".format(ci_id)
+            message = "Job `{}` not found.".format(job_id)
 
             return {'message': message}, 404
 
@@ -116,7 +126,7 @@ class Measurement(Resource):
 class MeasurementList(Resource):
     def get(self):
         """
-        Retrieve the complete list of measurements
+        Retrieve the complete list of measurements.
         ---
         tags:
           - Metric Measurements
