@@ -86,16 +86,29 @@ class TestAPI(unittest.TestCase):
 
     def test_job(self):
 
-        data = {'measurements': [],
-                'meta': {}}
+        data = {
+            'measurements': [],
+            'blobs': [],
+            'meta': {
+                'ci_name': 'string',
+                'ci_dataset': 'string',
+                'ci_url': 'string',
+                'env': {'env_name': 'string'},
+                'packages': []
+            }
+        }
 
         # add a job
-        r, json = self.client.post('/job/1', data=data)
+        r, json = self.client.post('/job', data=data)
         self.assertTrue(r.status_code == 201)
 
         # delete a job
         r, json = self.client.delete('/job/1')
         self.assertTrue(r.status_code == 200)
+
+        # delete a job that does not exist
+        r, json = self.client.delete('/job/1')
+        self.assertTrue(r.status_code == 400)
 
     def test_measurement(self):
 
@@ -105,21 +118,30 @@ class TestAPI(unittest.TestCase):
         r, json = self.client.post('/metric/demo.m1', data=data)
         self.assertTrue(r.status_code == 201)
 
-        data = {'measurements': [],
-                'meta': {}}
+        data = {
+            'measurements': [],
+            'blobs': [],
+            'meta': {
+                'ci_name': 'string',
+                'ci_dataset': 'string',
+                'ci_url': 'string',
+                'env': {'env_name': 'string'},
+                'packages': []
+            }
+        }
 
         # add a job
-        r, json = self.client.post('/job/1', data=data)
+        r, json = self.client.post('/job', data=data)
         self.assertTrue(r.status_code == 201)
 
         # add measurement
-        data = {'value': 1.0, 'metric_name': 'demo.m1'}
+        data = {'value': 1.0, 'metric': 'demo.m1', 'unit': 'unknown'}
 
         r, json = self.client.post('/measurement/1', data=data)
         self.assertTrue(r.status_code == 201)
 
         # add another measurement for an existing job
-        data = {'value': 2.0, 'metric_name': 'demo.m1'}
+        data = {'value': 2.0, 'metric': 'demo.m1', 'unit': 'unknown'}
 
         r, json = self.client.post('/measurement/1', data=data)
         self.assertTrue(r.status_code == 201)
