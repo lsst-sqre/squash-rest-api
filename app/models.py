@@ -1,3 +1,6 @@
+import numpy as np
+import json
+
 from .db import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -89,8 +92,9 @@ class MetricModel(db.Model):
     specification = db.relationship('SpecificationModel')
     measurement = db.relationship('MeasurementModel')
 
-    def __init__(self, name, package, display_name, description,
-                 unit=None, tags=None, reference=None):
+    def __init__(self, name, package=None, display_name=None,
+                 description=None, unit=None, tags=None,
+                 reference=None):
 
         self.name = name
         self.package = package
@@ -142,17 +146,21 @@ class SpecificationModel(db.Model):
     # Additional metadata information that can be tested
     # against the job metadata
     metadata_query = db.Column(JSON())
+    # Type of specification
+    type = db.Column(db.String(64))
+
     # Id of the metric this specification applies to
     metric_id = db.Column(db.Integer, db.ForeignKey('metric.id'))
 
     def __init__(self, name, metric_id, threshold=None, tags=None,
-                 metadata_query=None):
+                 metadata_query=None, type=None):
 
         self.name = name
         self.metric = metric_id
         self.threshold = threshold
         self.tags = tags
         self.metadata_query = metadata_query
+        self.type = type
 
     def json(self):
         return {'name': self.name,
@@ -173,74 +181,103 @@ class SpecificationModel(db.Model):
         db.session.commit()
 
 
+class EnvModel(db.Model):
+    """Database model for environment data,
+    it has a one-to-many relationship with JobModel """
+
+    __tablename__ = 'env'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), nullable=False)
+    display_name = db.Column(db.String(64), nullable=False)
+
+    job = db.relationship("JobModel", lazy="dynamic")
+
+    def __init__(self, name):
+
+        self.name = name
+        self.display_name = name
+
+    def json(self):
+        return {'name': self.name,
+                'display_name': self.display_name}
+
+    @classmethod
+    def find_by_name(cls, env_name):
+        return cls.query.filter_by(name=env_name).first()
+
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete_from_db(self):
+        db.session.delete(self)
+        db.session.commit()
+
+
 class JobModel(db.Model):
-    """Database model for lsst.verify metadata
+    """Database model for lsst.verify Job
+
+    Job has a one-to-many relationship with PackageModel,
+    MeasurementModel and BlobModel and a one-to-one relationship
+    with EnvModel.
     """
 
     __tablename__ = 'job'
 
-    STATUS_OK = 0
-    STATUS_FAILED = 1
-
+    # SQLAlchemy automatically set the first integer PK column
+    # that's not marked as a FK as autoincrement=True.
     id = db.Column(db.Integer, primary_key=True)
-    # ID of the CI run
-    ci_id = db.Column(db.String(32), nullable=False, unique=True)
-    # Name of the package than runs through CI, e.g. validate_drp
-    ci_name = db.Column(db.String(64), nullable=False)
-    # Name of the dataset, e.g cfht
-    ci_dataset = db.Column(db.String(32), nullable=False)
-    # Name of the platform where the the CI runs, e.g centos-7
-    ci_label = db.Column(db.String(64))
-    # URL to access the results of the CI run
-    ci_url = db.Column(db.Unicode(255))
-    # Status of this run 0=ok, 1=failed
-    status = db.Column(db.Integer, default=STATUS_OK)
+
+    # Id of the environment this job has run
+    env_id = db.Column(db.Integer, db.ForeignKey('env.id'))
 
     # Timestamp when the lsst.verify job was created
     date_created = db.Column(db.TIMESTAMP, nullable=False,
                              server_default=now())
+    env = db.Column(JSON())
+    meta = db.Column(JSON())
 
-    # URL for the git lfs repo for the dataset used in this run
-    dataset_repo_url = db.Column(db.Unicode(255))
-    # Name of the instrument that collected the dataset used in this run
-    instrument = db.Column(db.String(64))
-    # Name of the filter associated to this dataset
-    filter_name = db.Column(db.String(16))
-
-    # Measurements created by this job, are also deleted
-    # upon job deletion
-    measurements = db.relationship('MeasurementModel', lazy='dynamic',
+    # Measurements are deleted upon job deletion
+    measurements = db.relationship("MeasurementModel", lazy="dynamic",
                                    cascade="all, delete-orphan")
 
-    def __init__(self, ci_id,
-                 ci_name="",
-                 ci_dataset="",
-                 ci_label="",
-                 ci_url="",
-                 dataset_repo_url="",
-                 instrument="",
-                 filter_name=""):
+    # Packages are deleted upon job deletion
+    packages = db.relationship("PackageModel", lazy="dynamic",
+                               cascade="all, delete-orphan")
 
-        self.ci_id = ci_id
-        self.ci_name = ci_name
-        self.ci_dataset = ci_dataset
-        self.ci_label = ci_label
-        self.ci_url = ci_url
-        self.dataset_repo_url = dataset_repo_url
-        self.instrument = instrument
-        self.filter_name = filter_name
+    # Blobs are also deleted upon job deletion
+    blobs = db.relationship("BlobModel", lazy="dynamic",
+                            cascade="all, delete-orphan")
+
+    def __init__(self, env_id, env, meta):
+
+        self.env_id = env_id
+        self.env = env
+        self.meta = meta
 
     def json(self):
-        return {'ci_id': self.ci_id,
-                'measurements': [measurement.json() for measurement
-                                 in self.measurements.all()]}
 
-    def json_summary(self):
-        return {'ci_id': self.ci_id}
+        # Reconstruct the lsst.verify job metadata
+        self.meta['packages'] = [pkg.json() for pkg in self.packages.all()]
+        self.meta['env'] = self.env
+
+        return {'measurements': [meas.json() for meas in
+                                 self.measurements.all()],
+                'blobs': [blob.json() for blob in
+                          self.blobs.all()],
+                'meta': self.meta}
 
     @classmethod
-    def find_by_ci_id(cls, ci_id):
-        return cls.query.filter_by(ci_id=ci_id).first()
+    def find_by_id(cls, job_id):
+        return cls.query.filter_by(id=job_id).first()
+
+    @classmethod
+    def find_by_env_data(cls, env_id, key, value):
+
+        # JSON field expression
+        e = cls.env[key] == value
+        return cls.query.filter_by(env_id=env_id).filter(e).first()
 
     def save_to_db(self):
         db.session.add(self)
@@ -261,28 +298,36 @@ class PackageModel(db.Model):
     # EUPS package name
     name = db.Column(db.String(64), nullable=False)
     # URL of the git repository for this package
-    git_url = db.Column(db.Unicode(255), unique=True)
+    git_url = db.Column(db.Unicode(255))
     # SHA1 hash of the git commit
-    git_commit = db.Column(db.String(64), nullable=False)
+    git_sha = db.Column(db.String(64), nullable=False)
     # Resolved git branch that the commit resides on
     git_branch = db.Column(db.String(64))
     # EUPS build version
-    build_version = db.Column(db.String(64))
+    eups_version = db.Column(db.String(64))
 
     job_id = db.Column(db.Integer, db.ForeignKey('job.id'))
 
-    def __init__(self, name, git_url, git_commit, git_branch,
-                 build_version):
+    def __init__(self, job_id, name, git_url, git_sha, git_branch=None,
+                 eups_version=None):
 
+        self.job_id = job_id
         self.name = name
         self.git_url = git_url
-        self.git_commit = git_commit
+        self.git_sha = git_sha
         self.git_branch = git_branch
-        self.build_version = build_version
+        self.eups_version = eups_version
+
+    def json(self):
+        return {'name': self.name,
+                'git_url': self.git_url,
+                'git_sha': self.git_sha,
+                'git_branch': self.git_branch,
+                'eups_version': self.eups_version}
 
     @classmethod
-    def find_by_job(cls, job_id):
-        return cls.query.filter_by(job_id=job_id).all()
+    def find_by_job_id(cls, job_id):
+        return cls.query.filter_by(job_id=job_id).first()
 
     def save_to_db(self):
         db.session.add(self)
@@ -303,25 +348,80 @@ class MeasurementModel(db.Model):
     # Full qualified name of the metric including the package
     # name, e.g. validate_drp.AM1
     metric_name = db.Column(db.String(64), nullable=False)
+    # Unit of the measurement
+    unit = db.Column(db.String(16), nullable=False)
 
     metric_id = db.Column(db.Integer, db.ForeignKey('metric.id'))
     job_id = db.Column(db.Integer, db.ForeignKey('job.id'))
 
-    def __init__(self, job_id, metric_id, value=None, metric_name=''):
+    def __init__(self, job_id, metric_id, value=0, unit=None,
+                 metric='', identifier=None, blob_refs=None):
 
         self.job_id = job_id
         self.metric_id = metric_id
+
+        # FIX: review this
+        # handle nan in measurement values
+        if np.isnan(float(value)):
+            value = 0
+
         self.value = value
-        self.metric_name = metric_name
+        self.metric_name = metric
+        self.unit = unit
 
     def json(self):
         return {'value': self.value,
-                'metric_name': self.metric_name}
+                'unit': self.unit,
+                'metric': self.metric_name}
 
     @classmethod
     # A job can have multiple measurements
     def find_by_job_id(cls, job_id):
         return cls.query.filter_by(job_id=job_id).all()
+
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete_from_db(self):
+        db.session.delete(self)
+        db.session.commit()
+
+
+class BlobModel(db.Model):
+    """Database model for data blobs"""
+
+    __tablename__ = 'blob'
+
+    id = db.Column(db.Integer, primary_key=True)
+    # Receives a string representation of python UUID object
+    # and store as CHAR(32)
+    identifier = db.Column(db.String(32), nullable=False)
+    name = db.Column(db.String(64), nullable=False)
+    data = db.Column(JSON())
+
+    job_id = db.Column(db.Integer, db.ForeignKey('job.id'))
+
+    def __init__(self, job_id, identifier, name, data):
+
+        self.job_id = job_id
+        self.identifier = identifier
+        self.name = name
+
+        # FIX: review this
+        # handle nan values in data blobs
+
+        self.data = json.loads(json.dumps(data).replace("NaN", "0"))
+
+    def json(self):
+        return {'identifier': self.identifier,
+                'name': self.name,
+                'data': self.data}
+
+    @classmethod
+    # A job can have multiple measurements
+    def find_by_identifier(cls, identifier):
+        return cls.query.filter_by(identifier=identifier).first()
 
     def save_to_db(self):
         db.session.add(self)
