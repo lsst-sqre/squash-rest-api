@@ -4,3 +4,4 @@ flask-sqlalchemy
 pymysql
 coveralls
 flasgger
+numpy
