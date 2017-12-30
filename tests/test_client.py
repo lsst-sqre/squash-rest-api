@@ -23,8 +23,7 @@ class TestClient():
         headers['Accept'] = 'application/json'
 
         # convert JSON data to a string
-        if data:
-            data = json.dumps(data)
+        data = json.dumps(data)
 
         # send request to the test client and return the response
         with self.app.test_request_context(url, method=method, data=data,
