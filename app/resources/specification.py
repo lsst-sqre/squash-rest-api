@@ -1,4 +1,5 @@
 from flask_restful import Resource, reqparse
+from flask_jwt import jwt_required
 
 from ..models import SpecificationModel, MetricModel
 
@@ -33,15 +34,16 @@ class Specification(Resource):
           required: true
         responses:
           200:
-            description: Metric specification found
+            description: Metric specification found.
           404:
-            description: Metric specification not found
+            description: Metric specification not found.
         """
         spec = SpecificationModel.find_by_name(name)
         if spec:
             return spec.json()
         return {'message': 'Metric specification not found'}, 404
 
+    @jwt_required()
     def post(self, name):
         """
         Create a metric specification.
@@ -69,11 +71,15 @@ class Specification(Resource):
                 type: object
         responses:
           201:
-            description: Metric specification successfully created
+            description: Metric specification successfully created.
           400:
-            description: A metric specification whit this name already exists
+            description: A metric specification whit this name already exists.
+          401:
+            description: >
+                Authorization Required. Request does not contain a
+                valid access token.
           500:
-            description: An error occurred creating this metric specification
+            description: An error occurred creating this metric specification.
         """
 
         data = Specification.parser.parse_args()
@@ -119,6 +125,7 @@ class Specification(Resource):
 
         return spec.json(), 201
 
+    @jwt_required()
     def delete(self, name):
         """
         Delete a metric specification.
@@ -135,17 +142,19 @@ class Specification(Resource):
           required: true
         responses:
           200:
-            description: Metric specification deleted
-          400:
-            description: Metric specification not found
+            description: Metric specification deleted.
+          401:
+            description: >
+                Authorization Required. Request does not contain a
+                valid access token.
+          404:
+            description: Metric specification not found.
         """
         spec = SpecificationModel.find_by_name(name)
 
         if not spec:
-
             message = "The metric specification `{}` not " \
                       "found.".format(name)
-
             return {"message": message}, 404
 
         spec.delete_from_db()
@@ -167,11 +176,12 @@ class SpecificationList(Resource):
           - Metric Specifications
         responses:
           200:
-            description: List of metric specifications successfully retrieved
+            description: List of metric specifications successfully retrieved.
         """
         return {'specs': [spec.json() for spec
                           in SpecificationModel.query.all()]}
 
+    @jwt_required()
     def post(self):
         """
         Create a list of metric specifications.
@@ -190,17 +200,22 @@ class SpecificationList(Resource):
                 type: array
         responses:
           201:
-            description: List of metric specifications successfully created
+            description: List of metric specifications successfully created.
           400:
-            description: Metric specification already exists
+            description: >
+                Metric specification already exists or associated metric
+                not found.
+          401:
+            description: >
+                Authorization Required. Request does not contain a
+                valid access token.
           500:
-            description: An error occurred creating a metric specification
+            description: An error occurred creating a metric specification.
         """
 
         specs = SpecificationList.parser.parse_args()['specs']
 
         for data in specs:
-
             name = data.pop('name')
 
             if '.' in name:
@@ -221,7 +236,7 @@ class SpecificationList(Resource):
                           "name for the metric associated with this " \
                           "specification.".format(metric_name)
 
-                return {"message": message}, 404
+                return {"message": message}, 400
 
             if SpecificationModel.find_by_name(name):
                 message = "A specification with name `{}` already " \
@@ -241,4 +256,4 @@ class SpecificationList(Resource):
                 return {"message": message}, 500
 
         return {"message": "List of metric specificationss successfully "
-                           "created."}
+                           "created."}, 201

@@ -19,7 +19,6 @@ class Register(Resource):
                         help="This field cannot be blank."
                         )
 
-    @jwt_required()
     def post(self):
         """
         Create a SQuaSH user.
@@ -39,17 +38,17 @@ class Register(Resource):
                 type: string
               password:
                 type: string
-              # TODO: Add auth token
         responses:
           201:
-            description: User created
+            description: User successfully created.
           400:
-            description: User already exist
+            description: User already exist.
         """
         data = Register.parser.parse_args()
 
         if UserModel.find_by_username(data['username']):
-            return {"message": "A user with that username already exists"}, 400
+            return {"message": "A user with that username already "
+                    "exists."}, 400
 
         user = UserModel(data['username'], data['password'])
         user.save_to_db()
@@ -73,23 +72,44 @@ class User(Resource):
             required: true
         responses:
           200:
-            description: User found
+            description: User found.
           404:
-            description: User not found
+            description: User not found.
         """
         user = UserModel.find_by_username(username)
-        if user:
-            user.json()
-        return {"message": "User not found."}
+        if not user:
+            message = "Username `{}` not found.".format(username)
+            return {"message": message}, 404
+
+        return user.json()
 
     @jwt_required()
     def delete(self, username):
+        """
+        Delete a SQuaSH user.
+        ---
+        tags:
+          - Users
+        parameters:
+          - name: username
+            in: path
+            type: string
+            description: name of the user
+            required: true
+        responses:
+          200:
+            description: User deleted.
+          401:
+            description: >
+                Authorization Required. Request does not contain a
+                valid access token.
+          404:
+            description: User not found.
+        """
         user = UserModel.find_by_username(username)
         if not user:
-
             message = "Username `{}` not found.".format(username)
-
-            return {"message": message}
+            return {"message": message}, 404
 
         user.delete_from_db()
         return {"message": "User deleted."}

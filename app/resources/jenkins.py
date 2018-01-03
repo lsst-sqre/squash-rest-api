@@ -14,13 +14,13 @@ class Jenkins(Resource):
         - name: ci_id
           in: path
           type: integer
-          description: ID of the jenkins job
+          description: ID of the jenkins job.
           required: true
         responses:
           200:
-            description: Jenkins job found
+            description: Jenkins job successfully retrieved.
           404:
-            description: Jenkins job not found
+            description: Jenkins job not found.
         """
 
         env = EnvModel.find_by_name(env_name='jenkins')

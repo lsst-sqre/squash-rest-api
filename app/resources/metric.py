@@ -1,4 +1,5 @@
 from flask_restful import Resource, reqparse
+from flask_jwt import jwt_required
 
 from ..models import MetricModel
 
@@ -40,9 +41,9 @@ class Metric(Resource):
           required: true
         responses:
           200:
-            description: Metric found
+            description: Metric found.
           404:
-            description: Metric not found
+            description: Metric not found.
         """
         metric = MetricModel.find_by_name(name)
 
@@ -51,6 +52,7 @@ class Metric(Resource):
 
         return {'message': 'Metric not found'}, 404
 
+    @jwt_required()
     def post(self, name):
         """
         Create a metric.
@@ -80,11 +82,15 @@ class Metric(Resource):
                 type: object
         responses:
           201:
-            description: Metric successfully created
+            description: Metric successfully created.
           400:
-            description: A metric with this name already exists
+            description: A metric with this name already exists.
+          401:
+            description: >
+                Authorization Required. Request does not contain a
+                valid access token.
           500:
-            description: An error occurred creating this metric
+            description: An error occurred creating this metric.
         """
 
         data = Metric.parser.parse_args()
@@ -99,7 +105,6 @@ class Metric(Resource):
 
         # Metric names are unique
         if MetricModel.find_by_name(name):
-
             message = "A metric with name `{}` already exist.".format(name)
             return {'message': message}, 400
 
@@ -108,12 +113,12 @@ class Metric(Resource):
         try:
             metric.save_to_db()
         except:
-
             message = "An error ocurred creating metric `{}`.".format(name)
             return {"message": message}, 500
 
         return metric.json(), 201
 
+    @jwt_required()
     def delete(self, name):
         """
         Delete a metric.
@@ -128,15 +133,18 @@ class Metric(Resource):
           required: true
         responses:
           200:
-            description: Metric deleted
-          400:
-            description: Metric does not exist
+            description: Metric deleted.
+          401:
+            description: >
+                Authorization Required. Request does not contain a
+                valid access token.
+          404:
+            description: Metric not found.
         """
 
         metric = MetricModel.find_by_name(name)
         if not metric:
-            return {"message": "Metric '{}' does not "
-                               "exist.".format(name)}
+            return {"message": "Metric `{}` not found.".format(name)}, 404
 
         metric.delete_from_db()
         return {'message': 'Metric deleted.'}
@@ -157,11 +165,12 @@ class MetricList(Resource):
           - Metrics
         responses:
           200:
-            description: List of metrics successfully retrieved
+            description: List of metrics successfully retrieved.
         """
         return {'metrics': [metric.json() for metric
                             in MetricModel.query.all()]}
 
+    @jwt_required()
     def post(self):
         """
         Create a list of metrics.
@@ -180,11 +189,15 @@ class MetricList(Resource):
                 type: array
         responses:
           201:
-            description: List of metrics successfully loaded
+            description: List of metrics successfully created.
           400:
-            description: Metric already exists
+            description: Metric already exists.
+          401:
+            description: >
+                Authorization Required. Request does not contain a
+                valid access token.
           500:
-            description: An error occurred loading the metrics
+            description: An error occurred loading the metrics.
         """
 
         metrics = MetricList.parser.parse_args()['metrics']
@@ -216,4 +229,4 @@ class MetricList(Resource):
 
                 return {"message": message, "error": str(error)}, 500
 
-        return {"message": "List of metrics successfully loaded."}
+        return {"message": "List of metrics successfully loaded."}, 201
