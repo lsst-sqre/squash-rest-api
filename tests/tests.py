@@ -108,7 +108,7 @@ class TestAPI(unittest.TestCase):
 
         # delete a job that does not exist
         r, json = self.client.delete('/job/1')
-        self.assertTrue(r.status_code == 400)
+        self.assertTrue(r.status_code == 404)
 
     def test_measurement(self):
 
