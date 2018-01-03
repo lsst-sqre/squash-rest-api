@@ -1,4 +1,5 @@
 from flask_restful import Resource, reqparse
+from flask_jwt import jwt_required
 
 from ..models import JobModel, MetricModel, MeasurementModel, PackageModel,\
     BlobModel, EnvModel
@@ -15,13 +16,13 @@ class Job_(Resource):
         - name: job_id
           in: path
           type: integer
-          description: ID of the job
+          description: ID of the job.
           required: true
         responses:
           200:
-            description: Job found
+            description: Job successfully retrieved.
           404:
-            description: Job not found
+            description: Job not found.
         """
         job = JobModel.find_by_id(job_id)
 
@@ -30,6 +31,7 @@ class Job_(Resource):
 
         return {'message': 'Job not found'}, 404
 
+    @jwt_required()
     def delete(self, job_id):
         """
         Delete a verification job and associated measurements,\
@@ -41,24 +43,27 @@ class Job_(Resource):
         - name: job_id
           in: path
           type: integer
-          description: ID of the job
+          description: ID of the job.
           required: true
         responses:
           200:
-            description: Job successfully deleted
-          400:
-            description: Job does not exist
+            description: Job deleted.
+          404:
+            description: Job not found.
+          401:
+            description: >
+                Authorization Required. Request does not contain a
+                valid access token.
         """
 
         job = JobModel.find_by_id(job_id)
 
         if not job:
             message = "Job `{}` does not exist.".format(job_id)
-
-            return {"message": message}, 400
+            return {"message": message}, 404
 
         job.delete_from_db()
-        return {'message': 'Job successfully deleted.'}
+        return {'message': 'Job deleted.'}
 
 
 class Job(Resource):
@@ -80,6 +85,7 @@ class Job(Resource):
                         action="append",
                         )
 
+    @jwt_required()
     def post(self):
         """
         Create a verification job.
@@ -105,13 +111,15 @@ class Job(Resource):
                 type: object
         responses:
           201:
-            description: Job successfully created
+            description: Job successfully created.
           400:
+            description: Missing or invalid data in the request body.
+          401:
             description: >
-                You must provide a metric name associated with
-                the measurements
+                Authorization Required. Request does not contain a
+                valid access token.
           500:
-            description: An error occurred creating this Job
+            description: An error occurred creating this job.
         """
 
         data = Job.parser.parse_args()
@@ -123,7 +131,7 @@ class Job(Resource):
             env = data['meta'].pop('env')
         else:
             message = "Missing env metadata."
-            return {'message': message}, 404
+            return {'message': message}, 400
 
         if 'env_name' in env:
             e = EnvModel.find_by_name(env['env_name'])
@@ -136,7 +144,7 @@ class Job(Resource):
                     return {'message': message, 'error': str(error)}, 500
         else:
             message = "Missing `env_name` in env metadata."
-            return {"message": message}, 404
+            return {"message": message}, 400
 
         # Now extract the package metadata
         if 'packages' in data['meta']:
@@ -189,7 +197,7 @@ class Job(Resource):
                     message = "Metric `{}` not found, it looks like the " \
                               "metrics definition in SQuaSH is not up to " \
                               "date.".format(metric_name)
-                    return {"message": message}, 404
+                    return {"message": message}, 400
 
                 try:
                     m.save_to_db()

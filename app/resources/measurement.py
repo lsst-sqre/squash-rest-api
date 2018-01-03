@@ -1,5 +1,5 @@
 from flask_restful import Resource, reqparse
-# from flask_jwt import jwt_required
+from flask_jwt import jwt_required
 
 from ..models import MeasurementModel, JobModel, MetricModel
 
@@ -33,13 +33,13 @@ class Measurement(Resource):
         - name: job_id
           in: path
           type: integer
-          description: ID of the job
+          description: ID of the job.
           required: true
         responses:
           200:
-            description: List of Measurements successfully retrieved
+            description: List of Measurements successfully retrieved.
           404:
-            description: Job not found
+            description: Job not found.
         """
 
         # find the corresponding job
@@ -56,42 +56,46 @@ class Measurement(Resource):
 
             return {'message': message}, 404
 
-    # @jwt_required()
+    @jwt_required()
     def post(self, job_id):
         """
-       Create a new measurement for an existing job.
-       ---
-       tags:
-         - Metric Measurements
-       parameters:
-       - name: job_id
-         in: path
-         type: integer
-         description: ID of the job
-         required: true
-       - in: body
-         name: "Request body:"
-         schema:
-           type: object
-           required:
-             - metric
-             - value
-             - unit
-           properties:
-             metric:
-               type: string
-             value:
-               type: number
-             unit:
-               type: string
-       responses:
-         201:
-           description: Measurement successfully created
-         404:
-           description: Associated metric name or job not found
-         500:
-           description: An error occurred inserting the measurement
-       """
+        Create a new measurement for an existing job.
+        ---
+        tags:
+          - Metric Measurements
+        parameters:
+        - name: job_id
+          in: path
+          type: integer
+          description: ID of the job.
+          required: true
+        - in: body
+          name: "Request body:"
+          schema:
+            type: object
+            required:
+              - metric
+              - value
+              - unit
+            properties:
+              metric:
+                type: string
+              value:
+                type: number
+              unit:
+                type: string
+        responses:
+          201:
+            description: Measurement successfully created.
+          401:
+            description: >
+                Authorization Required. Request does not contain a
+                valid access token.
+          404:
+            description: Job or associated metric not found.
+          500:
+            description: An error occurred inserting the measurement.
+        """
 
         data = Measurement.parser.parse_args()
 
@@ -104,14 +108,12 @@ class Measurement(Resource):
             metric = MetricModel.find_by_name(metric_name)
         else:
             message = "Job `{}` not found.".format(job_id)
-
             return {'message': message}, 404
 
         if metric:
             measurement = MeasurementModel(job.id, metric.id, **data)
         else:
             message = "Metric `{}` not found.".format(metric_name)
-
             return {'message': message}, 404
 
         try:
@@ -132,7 +134,7 @@ class MeasurementList(Resource):
           - Metric Measurements
         responses:
           200:
-            description: List of Measurements successfully retrieved
+            description: List of Measurements successfully retrieved.
         """
         return {'measurements': [measurement.json() for measurement
                                  in MeasurementModel.query.all()]}
