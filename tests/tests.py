@@ -3,9 +3,6 @@ from app import create_app, db
 from app.models import UserModel
 from .test_client import TestClient
 
-DEFAULT_USERNAME = 'mole'
-DEFAULT_PASSWORD = 'desert'
-
 
 class TestAPI(unittest.TestCase):
 
@@ -14,21 +11,23 @@ class TestAPI(unittest.TestCase):
         self.context = self.app.app_context()
         self.context.push()
 
+        self.user = self.app.config['DEFAULT_USER']
+        self.password = self.app.config['DEFAULT_PASSWORD']
+
         # refresh testing db
         db.drop_all()
         db.create_all()
 
         # create default test user
-        user = UserModel(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+        user = UserModel(self.user, self.password)
         user.save_to_db()
 
         # create a testing client
         self.client = TestClient(self.app)
 
         # set an authentication token for the client
-        r, json = self.client.post('/auth',
-                                   data={'username': DEFAULT_USERNAME,
-                                         'password': DEFAULT_PASSWORD})
+        user = {'username': self.user, 'password': self.password}
+        r, json = self.client.post('/auth', data=user)
         self.client.set_auth(json['access_token'])
 
     def tearDown(self):
@@ -41,7 +40,7 @@ class TestAPI(unittest.TestCase):
         # get list of users
         r, json = self.client.get('/users')
         self.assertTrue(r.status_code == 200)
-        self.assertTrue(json['users'] == [DEFAULT_USERNAME])
+        self.assertTrue(json['users'] == [self.user])
 
         # register an user
         data = {'username': 'bob', 'password': 'cat'}
