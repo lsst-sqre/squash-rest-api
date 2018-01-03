@@ -20,8 +20,8 @@ class Config(object):
     # Swagger configuration for the API documentation
     SWAGGER = {
         "title": "LSST SQuaSH RESTful API",
-        "description": "RESTful API for the LSST SQuaSH metrics harness "
-                       "system. You can find out more about SQuaSH at "
+        "description": "RESTful API for the LSST SQuaSH metrics dashboard. "
+                       "You can find out more about SQuaSH at "
                        "https://sqr-009.lsst.io",
         "version": "1.0.0",
         "termsOfService": None,
