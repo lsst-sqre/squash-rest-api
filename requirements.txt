@@ -5,3 +5,5 @@ pymysql
 coveralls
 flasgger
 numpy
+mysqlclient
+uWSGI
