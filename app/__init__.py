@@ -6,6 +6,7 @@ from flasgger import Swagger
 
 from .auth import authenticate, identity
 from .db import db
+from .resources.root import Root
 from .resources.user import User, UserList, Register
 from .resources.metric import Metric, MetricList
 from .resources.specification import Specification, SpecificationList
@@ -36,6 +37,9 @@ def create_app(config):
                          {"name": "Users"}]}
     # Add api documentation
     Swagger(app, template=template)
+
+    # Redirect root url to api documentation
+    api.add_resource(Root, '/')
 
     # Generic Job resource
     api.add_resource(Job, '/job')

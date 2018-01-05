@@ -35,6 +35,12 @@ class TestAPI(unittest.TestCase):
         db.drop_all()
         self.context.pop()
 
+    def test_root(self):
+
+        # test redirect of root url
+        r = self.client.get('/', json_response=False)
+        self.assertTrue(r.status_code == 302)
+
     def test_user(self):
 
         # get list of users

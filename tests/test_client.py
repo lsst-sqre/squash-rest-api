@@ -10,7 +10,8 @@ class TestClient():
     def set_auth(self, token):
         self.auth = 'JWT ' + token
 
-    def send(self, url, method='GET', data=None, headers={}):
+    def send(self, url, method='GET', data=None, headers={},
+             json_response=True):
         # for testing, URLs just need to have the path and query string
         url_parsed = urlsplit(url)
         url = urlunsplit(('', '', url_parsed.path, url_parsed.query,
@@ -33,10 +34,15 @@ class TestClient():
                 rv = self.app.dispatch_request()
             rv = self.app.make_response(rv)
             rv = self.app.process_response(rv)
-            return rv, json.loads(rv.data.decode('utf-8'))
 
-    def get(self, url, headers={}):
-        return self.send(url, 'GET', headers=headers)
+            if json_response:
+                return rv, json.loads(rv.data.decode('utf-8'))
+            else:
+                return rv
+
+    def get(self, url, headers={}, json_response=True):
+        return self.send(url, 'GET', headers=headers,
+                         json_response=json_response)
 
     def post(self, url, data={}, headers={}):
         return self.send(url, 'POST', data, headers=headers)
