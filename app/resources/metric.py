@@ -229,4 +229,4 @@ class MetricList(Resource):
 
                 return {"message": message, "error": str(error)}, 500
 
-        return {"message": "List of metrics successfully loaded."}, 201
+        return {"message": "List of metrics successfully created."}, 201

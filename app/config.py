@@ -2,8 +2,13 @@
 
 import os
 
-SQUASH_DB_HOST = os.environ.get("SQUASH_DB_HOST", "localhost")
-SQUASH_DB_PASSWORD = os.environ.get("SQUASH_DB_PASSWORD", "")
+# Set locally for development or obtained from Cloud SQL credentials
+# in production (kubernetes deployment)
+SQUASH_DB_USER = os.environ.get('SQUASH_DB_USER', '')
+SQUASH_DB_PASSWORD = os.environ.get('SQUASH_DB_PASSWORD', '')
+
+# Not used in production (kubernetes deployment)
+SQUASH_DB_HOST = os.environ.get('SQUASH_DB_HOST', 'localhost')
 
 
 class Config(object):
@@ -32,10 +37,17 @@ class Config(object):
 class Production(Config):
     """Production configuration"""
 
-    DEBUG = False
+    DEBUG = True
 
-    SQLALCHEMY_DATABASE_URI = "mysql+pymysql://root:{}@{}/squash". \
-        format(SQUASH_DB_PASSWORD, SQUASH_DB_HOST)
+    # Default (admin) user
+    DEFAULT_USER = os.environ.get('SQUASH_DEFAULT_USER')
+    DEFAULT_PASSWORD = os.environ.get('SQUASH_DEFAULT_PASSWORD')
+
+    # Kubernetes deployment with a Cloud SQL instance
+    # Because the proxy runs in the cloudsql-proxy containter in the same pod,
+    # it appears to the application as localhost
+    SQLALCHEMY_DATABASE_URI = "mysql+pymysql://{}:{}@127.0.0.1/squash". \
+        format(SQUASH_DB_USER, SQUASH_DB_PASSWORD)
 
     SQLALCHEMY_ECHO = False
 
@@ -44,6 +56,10 @@ class Development(Config):
     """Development configuration"""
 
     DEBUG = True
+
+    # Default (dev) user
+    DEFAULT_USER = 'mole'
+    DEFAULT_PASSWORD = 'desert'
 
     SQLALCHEMY_DATABASE_URI = "mysql+pymysql://root:{}@{}/squash_dev". \
         format(SQUASH_DB_PASSWORD, SQUASH_DB_HOST)
@@ -55,6 +71,10 @@ class Testing(Config):
     """Testing configuration (for testing client)"""
 
     DEBUG = True
+
+    # Default (testing) user
+    DEFAULT_USER = 'mole'
+    DEFAULT_PASSWORD = 'desert'
 
     SQLALCHEMY_DATABASE_URI = "mysql+pymysql://root:{}@{}/squash_test". \
         format(SQUASH_DB_PASSWORD, SQUASH_DB_HOST)

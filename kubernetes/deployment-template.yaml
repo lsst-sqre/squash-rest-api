@@ -1,0 +1,85 @@
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: squash-restful-api
+  labels:
+    app: squash
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: squash
+        tier: api
+    spec:
+      containers:
+        - name: nginx
+          imagePullPolicy: "Always"
+          image: lsstsqre/squash-restful-api-nginx:{{ TAG }}
+          lifecycle:
+            preStop:
+              exec:
+                command: ['/usr/sbin/nginx','-s','quit']
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: '/etc/nginx/conf.d'
+            - name: tls-certs
+              mountPath: '/etc/tls'
+        - name: api
+          imagePullPolicy: "Always"
+          image: lsstsqre/squash-restful-api:{{ TAG }}
+          ports:
+            - name: http
+              containerPort: 5000
+          env:
+          - name: SQUASH_DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: cloudsql-db-credentials
+                key: username
+          - name: SQUASH_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: cloudsql-db-credentials
+                key: password
+          - name: SQUASH_API_PROFILE
+            value: 'app.config.Production'
+          - name: SQUASH_DEFAULT_USER
+            value: {{ SQUASH_DEFAULT_USER }}
+          - name: SQUASH_DEFAULT_PASSWORD
+            value: {{ SQUASH_DEFAULT_PASSWORD }}
+        # https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine
+        - name: cloudsql-proxy
+          image: gcr.io/cloudsql-docker/gce-proxy:1.11
+          command: ["/cloud_sql_proxy", "--dir=/cloudsql",
+                    "-instances=plasma-geode-127520:us-central1:squash-db=tcp:3306",
+                    "-credential_file=/secrets/cloudsql/credentials.json"]
+          volumeMounts:
+            - name: cloudsql-instance-credentials
+              mountPath: /secrets/cloudsql
+              readOnly: true
+            - name: ssl-certs
+              mountPath: /etc/ssl/certs
+            - name: cloudsql
+              mountPath: /cloudsql
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: tls-certs
+        - name: nginx-conf
+          configMap:
+            name: squash-restful-api-nginx-conf
+            items:
+              - key: 'nginx.conf'
+                path: 'nginx.conf'
+        # https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine
+        - name: cloudsql-instance-credentials
+          secret:
+            secretName: cloudsql-instance-credentials
+        - name: cloudsql
+          emptyDir:
+        - name: ssl-certs
+          hostPath:
+            path: /etc/ssl/certs
+
