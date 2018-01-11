@@ -11,7 +11,7 @@ from .resources.user import User, UserList, Register
 from .resources.metric import Metric, MetricList
 from .resources.specification import Specification, SpecificationList
 from .resources.measurement import Measurement, MeasurementList
-from .resources.job import Job, Job_
+from .resources.job import Job, JobWithArg
 from .resources.jenkins import Jenkins
 
 
@@ -43,11 +43,14 @@ def create_app(config):
 
     # Generic Job resource
     api.add_resource(Job, '/job')
-    # Because flasgger cannot handle multiple resource endpoints,
-    # the methods that require the job_id parameter are implemented
-    # in a separate resource, see the status of this issue at
+
+    # Because flasgger cannot handle endpoints with multiple URLs,
+    # the methods that require the job_id argument are implemented
+    # separately in a different resource.
+    # See the status of this issue and the reason for this
+    # workaround at
     # https://github.com/rochacbruno/flasgger/issues/174
-    api.add_resource(Job_, '/job/<int:job_id>')
+    api.add_resource(JobWithArg, '/job/<int:job_id>')
 
     # Resource for jobs in the jenkins enviroment
     api.add_resource(Jenkins, '/jenkins/<string:ci_id>')

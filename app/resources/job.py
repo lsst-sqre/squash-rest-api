@@ -5,7 +5,7 @@ from ..models import JobModel, MetricModel, MeasurementModel, PackageModel,\
     BlobModel, EnvModel
 
 
-class Job_(Resource):
+class JobWithArg(Resource):
     def get(self, job_id):
         """
         Retrieve a verification job.
