@@ -33,7 +33,7 @@ test:
 	coverage run --source=app test.py
 
 run: test
-	python run.py
+	flask run
 
 cloudsql-credentials: check-cloudsql-credentials
 	kubectl delete --ignore-not-found=true secrets cloudsql-instance-credentials

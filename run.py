@@ -18,12 +18,29 @@ See app/config.py for the corresponding configuration.
 """
 
 import os
+import click
 
 from app import create_app, db
 from app.models import UserModel
 
 profile = os.environ.get('SQUASH_API_PROFILE', 'app.config.Development')
 app = create_app(profile)
+
+@app.cli.command()
+def list_routes():
+    """List all api routes"""
+    click.echo("\n")
+    click.echo("{:30s} {:30s} {}".format("View", "Methods", "URL"))
+    click.echo("{:30s} {:30s} {}".format("----", "-------", "---"))
+    for rule in app.url_map.iter_rules():
+        options = {}
+        for arg in rule.arguments:
+            options[arg] = "[{0}]".format(arg)
+
+        methods = ','.join(rule.methods)
+        url = rule.rule
+        line = "{:30s} {:30s} {}".format(rule.endpoint, methods, url)
+        click.echo(line)
 
 with app.app_context():
     db.create_all()
