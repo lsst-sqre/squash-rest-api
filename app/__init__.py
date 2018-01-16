@@ -6,13 +6,14 @@ from flasgger import Swagger
 
 from .auth import authenticate, identity
 from .db import db
-from .resources.root import Root
-from .resources.user import User, UserList, Register
-from .resources.metric import Metric, MetricList
-from .resources.specification import Specification, SpecificationList
-from .resources.measurement import Measurement, MeasurementList
-from .resources.job import Job, JobWithArg
-from .resources.jenkins import Jenkins
+from .api_v1.root import Root
+from .api_v1.user import User, UserList, Register
+from .api_v1.metric import Metric, MetricList
+from .api_v1.specification import Specification, SpecificationList
+from .api_v1.measurement import Measurement, MeasurementList
+from .api_v1.job import Job, JobWithArg
+from .api_v1.jenkins import Jenkins
+from .api_v1.version import Version
 
 
 def create_app(config):
@@ -34,7 +35,8 @@ def create_app(config):
                          {"name": "Metrics"},
                          {"name": "Metric Specifications"},
                          {"name": "Metric Measurements"},
-                         {"name": "Users"}]}
+                         {"name": "Users"},
+                         {"name": "Misc"}]}
     # Add api documentation
     Swagger(app, template=template)
 
@@ -71,5 +73,8 @@ def create_app(config):
     # Metric measurement resources
     api.add_resource(Measurement, '/measurement/<int:job_id>')
     api.add_resource(MeasurementList, '/measurements')
+
+    # Miscellaneous
+    api.add_resource(Version, '/version')
 
     return app
