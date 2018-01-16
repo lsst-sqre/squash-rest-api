@@ -40,8 +40,8 @@ Assuming you have `kubectl` configured to access your GKE cluster, you can deplo
  TAG=latest make service deployment
 
 
-Debugging
----------
+Debug
+^^^^^
 
 You can inspect the deployment using:
 
@@ -62,3 +62,53 @@ You can open a terminal inside the `api` container with:
 .. code-block::
 
  kubectl exec -it <TAB> -c api /bin/bash
+
+
+Development workflow
+--------------------
+
+For development, you may install the dependencies and set up a local MySQL 5.7+ instance:
+
+1. Install the software dependencies
+
+.. code-block::
+
+ git clone  https://github.com/lsst-sqre/squash-rest-api.git
+ cd squash-rest-api
+
+ virtualenv env -p python3
+
+ # Activate the Flask Command Line Interface in your environment
+ echo "export FLASK_APP=run.py" >> env/bin/activate
+
+ source env/bin/activate
+ pip install -r requirements.txt
+
+2. Create the development database
+
+.. code-block::
+
+ mysql -u root
+ mysql> create database squash_dev;
+
+3. Run tests
+
+.. code-block::
+
+ coverage run --source=app test.py
+
+4. Run the app locally:
+
+.. code-block::
+
+ flask run
+
+or check the available commands with
+
+.. code-block::
+
+ flask --help
+
+The app will run at http://localhost:5000
+
+

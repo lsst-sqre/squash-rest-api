@@ -7,3 +7,4 @@ flasgger
 numpy
 mysqlclient
 uWSGI
+click
