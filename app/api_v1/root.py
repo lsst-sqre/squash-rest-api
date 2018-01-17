@@ -12,11 +12,12 @@ class Root(Resource):
         # List of URLs we want in the API root, one can add more
         # but remember that removing may impact the clients
 
-        response = {'job_url': self.external_url('job'),
-                    'metrics_url': self.external_url('metrics'),
-                    'apidocs_url': self.external_url('flasgger.apidocs'),
-                    'users_url': self.external_url('users'),
-                    'register_url': self.external_url('register'),
-                    'version_url': self.external_url('version')}
+        response = {'job': self.external_url('job'),
+                    'metrics': self.external_url('metrics'),
+                    'apidocs': self.external_url('flasgger.apidocs'),
+                    'users': self.external_url('users'),
+                    'register': self.external_url('register'),
+                    'version': self.external_url('version'),
+                    'auth': self.external_url('_default_auth_request_handler')}
 
         return response
