@@ -37,9 +37,9 @@ class TestAPI(unittest.TestCase):
 
     def test_root(self):
 
-        # test redirect of root url
-        r = self.client.get('/', json_response=False)
-        self.assertTrue(r.status_code == 302)
+        # test API root url
+        r, json = self.client.get('/')
+        self.assertTrue(r.status_code == 200)
 
     def test_user(self):
 
