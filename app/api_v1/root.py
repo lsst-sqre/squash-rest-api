@@ -15,7 +15,7 @@ class Root(Resource):
         response = {'job_url': self.external_url('job'),
                     'metrics_url': self.external_url('metrics'),
                     'apidocs_url': self.external_url('flasgger.apidocs'),
-                    'users': self.external_url('users'),
+                    'users_url': self.external_url('users'),
                     'register_url': self.external_url('register'),
                     'version_url': self.external_url('version')}
 
