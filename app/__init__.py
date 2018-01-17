@@ -44,7 +44,7 @@ def create_app(config):
     api.add_resource(Root, '/')
 
     # Generic Job resource
-    api.add_resource(Job, '/job')
+    api.add_resource(Job, '/job', endpoint='job')
 
     # Because flasgger cannot handle endpoints with multiple URLs,
     # the methods that require the job_id argument are implemented
@@ -52,29 +52,31 @@ def create_app(config):
     # See the status of this issue and the reason for this
     # workaround at
     # https://github.com/rochacbruno/flasgger/issues/174
-    api.add_resource(JobWithArg, '/job/<int:job_id>')
+    api.add_resource(JobWithArg, '/job/<int:job_id>', endpoint='jobwitharg')
 
     # Resource for jobs in the jenkins enviroment
-    api.add_resource(Jenkins, '/jenkins/<string:ci_id>')
+    api.add_resource(Jenkins, '/jenkins/<string:ci_id>', endpoint='jenkins')
 
     # User resources
-    api.add_resource(User, '/user/<string:username>')
-    api.add_resource(UserList, '/users')
-    api.add_resource(Register, '/register')
+    api.add_resource(User, '/user/<string:username>', endpoint='user')
+    api.add_resource(UserList, '/users', endpoint='users')
+    api.add_resource(Register, '/register', endpoint='register')
 
     # Metric resources
-    api.add_resource(Metric, '/metric/<string:name>')
-    api.add_resource(MetricList, '/metrics')
+    api.add_resource(Metric, '/metric/<string:name>', endpoint='metric')
+    api.add_resource(MetricList, '/metrics', endpoint='metrics')
 
     # Metric specifications resources
-    api.add_resource(Specification, '/spec/<string:name>')
-    api.add_resource(SpecificationList, '/specs')
+    api.add_resource(Specification, '/spec/<string:name>', endpoint='spec')
+    api.add_resource(SpecificationList, '/specs', endpoint='specs')
 
     # Metric measurement resources
-    api.add_resource(Measurement, '/measurement/<int:job_id>')
-    api.add_resource(MeasurementList, '/measurements')
+    api.add_resource(Measurement, '/measurement/<int:job_id>',
+                     endpoint='measurement')
+    api.add_resource(MeasurementList, '/measurements',
+                     endpoint='measurements')
 
     # Miscellaneous
-    api.add_resource(Version, '/version')
+    api.add_resource(Version, '/version', endpoint='version')
 
     return app

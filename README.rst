@@ -78,8 +78,9 @@ For development, you may install the dependencies and set up a local MySQL 5.7+ 
 
  virtualenv env -p python3
 
- # Activate the Flask Command Line Interface in your environment
+ # Activate the Flask cli and debugger in your environment
  echo "export FLASK_APP=run.py" >> env/bin/activate
+ echo "export FLASK_DEBUG=1" >> env/bin/activate
 
  source env/bin/activate
  pip install -r requirements.txt
