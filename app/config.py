@@ -50,6 +50,7 @@ class Production(Config):
         format(SQUASH_DB_USER, SQUASH_DB_PASSWORD)
 
     SQLALCHEMY_ECHO = False
+    PREFERRED_URL_SCHEME = 'https'
 
 
 class Development(Config):
