@@ -16,11 +16,22 @@ from .api_v1.jenkins import Jenkins
 from .api_v1.version import Version
 
 
-def create_app(config):
-    """Create an application instance."""
+def create_app(profile):
+    """Create an instance of the flask app.
 
+    Parameters
+    ----------
+    profile: `str`
+        One of the app configuration profiles, `app.config.Development`,
+        `app.config.Testing` or `app.config.Production`.
+
+    Return
+    ------
+    app: `object`
+        A flask app instance.
+    """
     app = Flask(__name__)
-    app.config.from_object(config)
+    app.config.from_object(profile)
 
     # initialize extensions
     db.init_app(app)
