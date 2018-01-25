@@ -1,11 +1,14 @@
+import json
+
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
 from flask import current_app as app
 
+from app.tasks.s3 import get_s3_uri, upload_object
 from app.error import ApiError
 
 from ..models import JobModel, MetricModel, MeasurementModel, PackageModel,\
-    EnvModel
+    BlobModel, EnvModel
 
 
 class JobWithArg(Resource):
@@ -150,6 +153,20 @@ class Job(Resource):
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
+        # async
+        try:
+            self.upload_job(job_id)
+        except ApiError as err:
+            app.logger.error(err.message)
+            return {'message': err.message}, err.status_code
+
+        # async
+        try:
+            self.upload_blobs()
+        except ApiError as err:
+            app.logger.error(err.message)
+            return {'message': err.message}, err.status_code
+
         message = "Request for creating Job `{}` received".format(job_id)
         return {'message': message}, 202
 
@@ -176,13 +193,19 @@ class Job(Resource):
         return e.id
 
     def create_job(self, env_id):
-        """Extracts the job data metadata and creates a job object.
+        """ Creates the job object
 
         Parameters
         ----------
         env_id : `int`
             id of the environment associated with the job.
+
+        Return
+        ------
+        job_id : `int`
+            id of the job created
         """
+
         # job metadata contains arbitrary metadata plus
         # env metadata and packages
         meta = self.data['meta'].copy()
@@ -253,8 +276,67 @@ class Job(Resource):
                 raise ApiError("Metric `{}` not found, it looks like "
                                "the metrics definition is out of "
                                "date.".format(metric_name), 400)
+
+            # Insert data blobs associated with this measurement
+            blobs = self.data['blobs']
+
+            m.blobs = []
+
+            for blob in blobs:
+                identifier = blob['identifier']
+                if identifier in measurement['blob_refs']:
+                    name = blob['name']
+                    b = BlobModel(identifier, name)
+                    m.blobs.append(b)
+
             try:
                 m.save_to_db()
             except Exception:
                 raise ApiError("An error occurred inserting "
                                "measurements", 500)
+
+    def upload_job(self, job_id):
+        """Upload job document to S3 and register the S3 URI
+        location.
+
+        Parameters
+        ----------
+        job_id : `int`
+            id of the job object previously created
+        """
+        key = str(job_id)
+        body = json.dumps(self.data)
+
+        # async celery task
+        upload_object.delay(key, body)
+
+        # update the s3_uri field
+        job = JobModel.find_by_id(job_id)
+        job.s3_uri = get_s3_uri(key)
+        try:
+            job.save_to_db()
+        except Exception:
+            raise ApiError("An error occurred registering "
+                           "the S3 URI location.", 500)
+
+    def upload_blobs(self):
+
+        blobs = self.data['blobs']
+
+        for blob in blobs:
+
+            key = blob['identifier']
+            body = json.dumps(blob['data'])
+            metadata = {'name': blob['name']}
+
+            # async celery task
+            upload_object.delay(key, body, metadata)
+
+            # update the s3_uri field
+            b = BlobModel.find_by_identifier(key)
+            b.s3_uri = get_s3_uri(key)
+            try:
+                b.save_to_db()
+            except Exception:
+                raise ApiError("An error ocurred registering "
+                               "the S3 URI location.", 500)
