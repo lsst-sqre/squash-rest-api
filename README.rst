@@ -26,16 +26,21 @@ Assuming you have `kubectl` configured to access your GKE cluster, you can deplo
 
  cd squash-restful-api
  
- # Used to create the cloudsql-db-credentials secret
+ # Create secret with cloud sql proxy key and database password
  export PROXY_KEY_FILE_PATH=<path to the JSON file with the SQuaSH Cloud SQL service account key.>
  export SQUASH_DB_PASSWORD=<password created for the proxyuser when the Cloud SQL instance was configured.>
  
- # create secrets with cloud sql proxy key and database password
  make cloudsql-credentials
+
+ # Create secret with AWS credentials
+ export AWS_ACCESS_KEY_ID=<the aws access key id>
+ export AWS_SECRET_ACCESS_KEY=<the aws secret access key>
+
+ make aws-secret
   
- # The app default user
- export SQUASH_DEFAULT_USER=<the admin user for the production depoyment>
- export SQUASH_DEFAULT_PASSWORD=<password for the admin user>
+ # Set the application default user
+ export SQUASH_DEFAULT_USER=<the squash api admin user>
+ export SQUASH_DEFAULT_PASSWORD=<password for the squash api admin user>
  
  TAG=latest make service deployment
 
@@ -55,6 +60,8 @@ and the container logs using:
 
  kubectl logs deployment/squash-restful-api nginx
  kubectl logs deployment/squash-restful-api api
+ kubectl logs deployment/squash-restful-api worker
+ kubectl logs deployment/squash-restful-api redis
  kubectl logs deployment/squash-restful-api cloudsql-proxy
  
 You can open a terminal inside the `api` container with:
@@ -67,7 +74,6 @@ You can open a terminal inside the `api` container with:
 Development workflow
 --------------------
 
-For development, you may install the dependencies and set up a local MySQL 5.7+ instance:
 
 1. Install the software dependencies
 
@@ -85,12 +91,16 @@ For development, you may install the dependencies and set up a local MySQL 5.7+ 
  source env/bin/activate
  pip install -r requirements.txt
 
-2. Create the development database
+2. Initialize the MySQL, Celery and Redis instances for development
 
 .. code-block::
 
- mysql -u root
- mysql> create database squash_dev;
+ make mysql
+ make db
+ <new terminal session>
+ make celery
+ <new terminal session>
+ make redis
 
 3. Run tests
 
@@ -112,4 +122,5 @@ or check the available commands with
 
 The app will run at http://localhost:5000
 
+5. Exercise the API running the `test API notebook <https://github.com/lsst-sqre/squash-rest-api/blob/master/tests/test_api.ipynb>`_.
 
