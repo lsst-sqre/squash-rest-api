@@ -73,6 +73,13 @@ configmap:
 	kubectl delete --ignore-not-found=true configmap squash-restful-api-nginx-conf
 	kubectl create configmap squash-restful-api-nginx-conf --from-file=$(NGINX_CONFIG)
 
+aws-secret: check-aws-creds
+	@echo "Creating AWS secret"
+	kubectl delete --ignore-not-found=true secrets squash-aws-creds
+	kubectl create secret generic squash-aws-creds \
+        --from-literal=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+        --from-literal=AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
 deployment: check-tag configmap
 	@echo "Creating deployment..."
 	@$(REPLACE) $(DEPLOYMENT_TEMPLATE) $(DEPLOYMENT_CONFIG)
@@ -94,3 +101,12 @@ check-cloudsql-credentials:
 check-squash-db-password:
 	@if test -z ${SQUASH_DB_PASSWORD}; then echo "Error: SQUASH_DB_PASSWORD is undefined."; exit 1; fi
 
+check-aws-creds:
+	@if [ -z ${AWS_ACCESS_KEY_ID} ]; \
+	then echo "Error: AWS_ACCESS_KEY_ID is undefined."; \
+       exit 1; \
+    fi
+	@if [ -z ${AWS_SECRET_ACCESS_KEY} ]; \
+    then echo "Error: AWS_SECRET_ACCESS_KEY is undefined."; \
+       exit 1; \
+    fi
