@@ -26,6 +26,7 @@ spec:
               mountPath: '/etc/nginx/conf.d'
             - name: tls-certs
               mountPath: '/etc/tls'
+        # Flask application
         - name: api
           imagePullPolicy: "Always"
           image: lsstsqre/squash-restful-api:{{ TAG }}
@@ -49,6 +50,67 @@ spec:
             value: {{ SQUASH_DEFAULT_USER }}
           - name: SQUASH_DEFAULT_PASSWORD
             value: {{ SQUASH_DEFAULT_PASSWORD }}
+          - name: CELERY_BROKER_URL
+            value: 'redis://localhost:6379'
+          - name: S3_BUCKET
+            value: 'squash.data'
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: squash-aws-creds
+                key: 'AWS_ACCESS_KEY_ID'
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: squash-aws-creds
+                key: 'AWS_SECRET_ACCESS_KEY'
+        # Celery worker
+        - name: worker
+          imagePullPolicy: "Always"
+          image: lsstsqre/squash-restful-api:{{ TAG }}
+          command: ["celery"]
+          args: ["-A", "app.tasks", "-E", "-l", "INFO", "worker"]
+          ports:
+            - name: http
+              containerPort: 5000
+          env:
+          - name: SQUASH_DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: cloudsql-db-credentials
+                key: username
+          - name: SQUASH_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: cloudsql-db-credentials
+                key: password
+          - name: SQUASH_API_PROFILE
+            value: 'app.config.Production'
+          - name: SQUASH_DEFAULT_USER
+            value: {{ SQUASH_DEFAULT_USER }}
+          - name: SQUASH_DEFAULT_PASSWORD
+            value: {{ SQUASH_DEFAULT_PASSWORD }}
+          - name: CELERY_BROKER_URL
+            value: 'redis://localhost:6379'
+          - name: S3_BUCKET
+            value: 'squash.data'
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: squash-aws-creds
+                key: 'AWS_ACCESS_KEY_ID'
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: squash-aws-creds
+                key: 'AWS_SECRET_ACCESS_KEY'
+        # Broker
+        - name: redis
+          imagePullPolicy: "Always"
+          image: redis
+          ports:
+            - containerPort: 6379
+              name: "redis"
         # https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine
         - name: cloudsql-proxy
           image: gcr.io/cloudsql-docker/gce-proxy:1.11
