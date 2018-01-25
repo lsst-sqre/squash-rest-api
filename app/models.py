@@ -1,5 +1,4 @@
 import numpy as np
-import json
 
 from .db import db
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,9 +6,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # Implements JSON data type in MySQL 5.7 see
 # https://jira.lsstcorp.org/browse/DM-12191
 from sqlalchemy.dialects.mysql import JSON
+from sqlalchemy.dialects.mysql import TIMESTAMP
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.dialects.mysql import TIMESTAMP
 
 
 # https://jira.lsstcorp.org/browse/DM-12193
@@ -23,8 +22,8 @@ def mysql_now(element, compiler, **kw):
 
 
 class UserModel(db.Model):
-    """Database model for authenticated API users."""
-
+    """Database model for authenticated API users.
+    """
     __tablename__ = 'user'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -39,7 +38,6 @@ class UserModel(db.Model):
     def verify_password(self, password):
         """Verify the user password against the password hash saved
         in the database."""
-
         return check_password_hash(self.password_hash, password)
 
     def json(self):
@@ -66,7 +64,6 @@ class MetricModel(db.Model):
     """Database model for metrics as defined
     in the lsst.verify package. See https://sqr-019.lsst.io/
     """
-
     __tablename__ = 'metric'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -129,7 +126,6 @@ class SpecificationModel(db.Model):
     """Database model for metric specifications as defined
     in the lsst.verify package. See https://sqr-019.lsst.io/
     """
-
     __tablename__ = 'spec'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -183,7 +179,6 @@ class EnvModel(db.Model):
     """Database model for execution environments.
     See https://sqr-009.lsst.io/
     """
-
     __tablename__ = 'env'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -220,7 +215,6 @@ class JobModel(db.Model):
     """Database model for jobs as defined
     in the lsst.verify package. See https://sqr-019.lsst.io/
     """
-
     __tablename__ = 'job'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -241,9 +235,9 @@ class JobModel(db.Model):
     packages = db.relationship("PackageModel", lazy="dynamic",
                                cascade="all, delete-orphan")
 
-    # Blobs are also deleted upon job deletion
-    blobs = db.relationship("BlobModel", lazy="dynamic",
-                            cascade="all, delete-orphan")
+    # URI of the object store repository for this job, note that this
+    # field is updated only after the job object is created
+    s3_uri = db.Column(db.Unicode(255), default=None)
 
     def __init__(self, env_id, env, meta):
 
@@ -285,8 +279,8 @@ class JobModel(db.Model):
 
 class PackageModel(db.Model):
     """A specific version of an eups package used
-    by the lsst.verify job"""
-
+    by the lsst.verify job
+    """
     __tablename__ = 'package'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -333,11 +327,23 @@ class PackageModel(db.Model):
         db.session.commit()
 
 
+# Association table for measurements and blobs
+measurement_blob = db.Table('measurement_blob',
+                            db.Column('measurement_id',
+                                      db.Integer,
+                                      db.ForeignKey('measurement.id'),
+                                      primary_key=True),
+                            db.Column('blob_id',
+                                      db.Integer,
+                                      db.ForeignKey('blob.id'),
+                                      primary_key=True)
+                            )
+
+
 class MeasurementModel(db.Model):
     """Database model for metric measurements as defined
     in the lsst.verify package. See https://sqr-019.lsst.io/
     """
-
     __tablename__ = 'measurement'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -353,6 +359,9 @@ class MeasurementModel(db.Model):
     metric_id = db.Column(db.Integer, db.ForeignKey('metric.id'))
 
     job_id = db.Column(db.Integer, db.ForeignKey('job.id'))
+
+    blobs = db.relationship('BlobModel', secondary=measurement_blob,
+                            lazy='subquery')
 
     def __init__(self, job_id, metric_id, value=0, unit=None,
                  metric='', identifier=None, blob_refs=None):
@@ -390,33 +399,30 @@ class MeasurementModel(db.Model):
 
 class BlobModel(db.Model):
     """Database model for data blobs as defined
-    in the lsst.verify package. See https://sqr-019.lsst.io/"""
-
+    in the lsst.verify package. See https://sqr-019.lsst.io/
+    The data blobs are uploaded to S3 and referenced here.
+    """
     __tablename__ = 'blob'
 
     id = db.Column(db.Integer, primary_key=True)
     # Receives a string representation of python UUID object
     # and store as CHAR(32)
     identifier = db.Column(db.String(32), nullable=False)
+    # Blob name
     name = db.Column(db.String(64), nullable=False)
-    data = db.Column(JSON())
+    # URI of the object store repository for this job, note that
+    # this field is updated only after the blob object is created
+    s3_uri = db.Column(db.Unicode(255), default=None)
 
-    job_id = db.Column(db.Integer, db.ForeignKey('job.id'))
+    def __init__(self, identifier, name):
 
-    def __init__(self, job_id, identifier, name, data):
-
-        self.job_id = job_id
         self.identifier = identifier
         self.name = name
-
-        # FIX: review this
-        # handle nan values in data blobs
-        self.data = json.loads(json.dumps(data).replace("NaN", "0"))
 
     def json(self):
         return {'identifier': self.identifier,
                 'name': self.name,
-                'data': self.data}
+                's3_uri': self.s3_uri}
 
     @classmethod
     def find_by_identifier(cls, identifier):
