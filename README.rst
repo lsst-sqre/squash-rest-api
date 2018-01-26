@@ -8,27 +8,39 @@ The SQuaSH RESTful API is a web app implemented in Flask for managing the SQuaSH
 Requirements
 ============
 
-The SQuaSH RESTful API is deployed as part of the `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ and requires a MySQL 5.7 instance on Google Cloud SQL.
-We assume this instance exists in the `sqre` project. 
+The SQuaSH RESTful API is deployed as part of the `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ and requires a MySQL 5.7 instance on Google Cloud SQL. We assume this instance exists in the `sqre` project.
 
-The steps used to connect the `squash-restful-api` app running on GKE with the Google Cloud SQL instance are documented `here <https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine>`_.
-The Service account private key created in this step and referred below as `PROXY_KEY_FILE_PATH` is stored in SQuaRE 1Password repository and identified as *SQuaSH Cloud SQL service account key*.
+The steps used to connect the `squash-restful-api` app running on GKE with the Google Cloud SQL instance are documented `here <https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine>`_. The Service account private key created at this step, referred below as `PROXY_KEY_FILE_PATH`, is stored in SQuaRE 1Password account and identified as *SQuaSH Cloud SQL service account key*.
 
-See also `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ on how to configure `kubectl` to access you GKE cluster, use the correct *namespace* for this deployment and create the TLS secrets used
-below. 
+See also `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ on how to configure `kubectl` to access you GKE cluster, use the correct *namespace* for this deployment and create the TLS secret used below.
+
 
 Kubernetes deployment
 ---------------------
 
-Assuming you have `kubectl` configured to access your GKE cluster, you can deploy the `squash-restful-api` using:
+
+For a `demo` deployment you should follow the instructions at `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ repository and run the commands below *before* deploying the SQuaSH RESTful API:
+
+Assuming you have `kubectl` configured to access your GKE cluster:
 
 .. code-block::
 
+ git clone https://github.com/lsst-sqre/squash-deployment
+ cd squash-deployment
+
+ # Create the deployment namespace
+ export NAMESPACE=demo
+ make namespace
+
+ # Create the TLS secret
+ make tls-certs
+
+ git clone https://github.com/lsst-sqre/squash-restful-api
  cd squash-restful-api
  
- # Create secret with cloud sql proxy key and database password
+ # Create secret with the Cloud SQL Proxy key and the database password
  export PROXY_KEY_FILE_PATH=<path to the JSON file with the SQuaSH Cloud SQL service account key.>
- export SQUASH_DB_PASSWORD=<password created for the proxyuser when the Cloud SQL instance was configured.>
+ export SQUASH_DB_PASSWORD=<password created for the user 'proxyuser' when the Cloud SQL instance was configured.>
  
  make cloudsql-credentials
 
@@ -43,6 +55,11 @@ Assuming you have `kubectl` configured to access your GKE cluster, you can deplo
  export SQUASH_DEFAULT_PASSWORD=<password for the squash api admin user>
  
  TAG=latest make service deployment
+
+ # Create the service name
+ cd ..
+ export SQUASH_SERVICE=squash-restful-api
+ make name
 
 
 Debug
