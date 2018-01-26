@@ -1,5 +1,6 @@
 # http://flask.pocoo.org/docs/0.12/config/#configuration-best-practices
 import os
+from datetime import timedelta
 
 # Set locally for development or obtained from Cloud SQL credentials
 # in production (kubernetes deployment)
@@ -49,6 +50,9 @@ class Production(Config):
 
     SQLALCHEMY_ECHO = False
     PREFERRED_URL_SCHEME = 'https'
+
+    # Required for the upload of large files ~1G
+    JWT_EXPIRATION_DELTA = timedelta(900)
 
 
 class Development(Config):
