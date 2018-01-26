@@ -8,3 +8,5 @@ numpy
 mysqlclient
 uWSGI
 click
+boto3
+celery[redis]

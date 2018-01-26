@@ -1,6 +1,6 @@
 PATH:=bin/:${PATH}
-.PHONY: clean test run mysql-secret build push configmap deployment\
-service check-tag
+.PHONY: clean test mysql redis celery run mysql-secret build push configmap deployment\
+service check-tag check-cloudsql-credentials check-squash-db-password
 
 MYSQL_PASSWD = passwd.txt
 API = lsstsqre/squash-restful-api
@@ -15,8 +15,12 @@ help:
 	@echo "Available commands:"
 	@echo "  clean			remove temp files"
 	@echo "  test			run tests and generate test coverage"
+	@echo "  mysql  		start mysql for development"
+	@echo "  db       		(re)create dev and test databases"
+	@echo "  redis			run redis container for development"
+	@echo "  celery			start celery worker in development mode"
 	@echo "  run			run tests and run the app in development mode"
-	@echo "  cloudsql-credentials  create secrets with cloud sql proxy key and db password."
+	@echo "  cloudsql-credentials  create secrets with cloud sql proxy key and db password"
 	@echo "  build          build squash-restful-api and nginx docker images"
 	@echo "  push           push docker images to docker hub"
 	@echo "  configmap      create configmap for customized nginx configuration"
@@ -31,6 +35,21 @@ clean:
 test:
 	flake8 app tests
 	coverage run --source=app test.py
+
+mysql: check-squash-db-password
+	docker run --rm --name mysql -e MYSQL_ROOT_PASSWORD=${SQUASH_DB_PASSWORD} -p 3306:3306 -d mysql:5.7
+
+db: check-squash-db-password
+	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'DROP DATABASE squash_dev'"
+	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'CREATE DATABASE squash_dev'"
+	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'DROP DATABASE squash_test'"
+	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'CREATE DATABASE squash_test'"
+
+redis:
+	docker run --rm --name redis -p 6379:6379 redis
+
+celery:
+	celery -A app.tasks -E -l DEBUG worker
 
 run: test
 	flask run
@@ -54,6 +73,13 @@ configmap:
 	kubectl delete --ignore-not-found=true configmap squash-restful-api-nginx-conf
 	kubectl create configmap squash-restful-api-nginx-conf --from-file=$(NGINX_CONFIG)
 
+aws-secret: check-aws-creds
+	@echo "Creating AWS secret"
+	kubectl delete --ignore-not-found=true secrets squash-aws-creds
+	kubectl create secret generic squash-aws-creds \
+        --from-literal=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+        --from-literal=AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
 deployment: check-tag configmap
 	@echo "Creating deployment..."
 	@$(REPLACE) $(DEPLOYMENT_TEMPLATE) $(DEPLOYMENT_CONFIG)
@@ -71,3 +97,16 @@ check-tag:
 check-cloudsql-credentials:
 	@if test -z ${SQUASH_DB_PASSWORD}; then echo "Error: SQUASH_DB_PASSWORD is undefined."; exit 1; fi
 	@if test -z ${PROXY_KEY_FILE_PATH}; then echo "Error: PROXY_KEY_FILE_PATH is undefined."; exit 1; fi
+
+check-squash-db-password:
+	@if test -z ${SQUASH_DB_PASSWORD}; then echo "Error: SQUASH_DB_PASSWORD is undefined."; exit 1; fi
+
+check-aws-creds:
+	@if [ -z ${AWS_ACCESS_KEY_ID} ]; \
+	then echo "Error: AWS_ACCESS_KEY_ID is undefined."; \
+       exit 1; \
+    fi
+	@if [ -z ${AWS_SECRET_ACCESS_KEY} ]; \
+    then echo "Error: AWS_SECRET_ACCESS_KEY is undefined."; \
+       exit 1; \
+    fi

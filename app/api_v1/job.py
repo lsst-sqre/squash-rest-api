@@ -1,5 +1,11 @@
+import json
+
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
+from flask import current_app as app
+
+from app.tasks.s3 import get_s3_uri, upload_object
+from app.error import ApiError
 
 from ..models import JobModel, MetricModel, MeasurementModel, PackageModel,\
     BlobModel, EnvModel
@@ -110,8 +116,8 @@ class Job(Resource):
               meta:
                 type: object
         responses:
-          201:
-            description: Job successfully created.
+          202:
+            description: Request for creating Job received.
           400:
             description: Missing or invalid data in the request body.
           401:
@@ -121,102 +127,216 @@ class Job(Resource):
           500:
             description: An error occurred creating this job.
         """
+        self.data = Job.parser.parse_args()
 
-        data = Job.parser.parse_args()
+        try:
+            env_id = self.check_or_create_env()
+        except ApiError as err:
+            app.logger.error(err.message)
+            return {'message': err.message}, err.status_code
 
-        # Create a job
+        try:
+            job_id = self.create_job(env_id)
+        except ApiError as err:
+            app.logger.error(err.message)
+            return {'message': err.message}, err.status_code
 
-        # First check if the env exists, if not create it
-        if 'env' in data['meta']:
-            env = data['meta'].pop('env')
+        try:
+            self.insert_packages(job_id)
+        except ApiError as err:
+            app.logger.error(err.message)
+            return {'message': err.message}, err.status_code
+
+        try:
+            self.insert_measurements(job_id)
+        except ApiError as err:
+            app.logger.error(err.message)
+            return {'message': err.message}, err.status_code
+
+        # async
+        try:
+            self.upload_job(job_id)
+        except ApiError as err:
+            app.logger.error(err.message)
+            return {'message': err.message}, err.status_code
+
+        # async
+        try:
+            self.upload_blobs()
+        except ApiError as err:
+            app.logger.error(err.message)
+            return {'message': err.message}, err.status_code
+
+        message = "Request for creating Job `{}` received".format(job_id)
+        return {'message': message}, 202
+
+    def check_or_create_env(self):
+        """Check if env (e.g. Jenkins) exists in the db,
+        if not create it.
+        """
+        if 'env' in self.data['meta']:
+            env = self.data['meta']['env']
+            if 'env_name' in env:
+                e = EnvModel.find_by_name(env['env_name'])
+                if not e:
+                    e = EnvModel(env['env_name'])
+                    try:
+                        e.save_to_db()
+                    except Exception:
+                        raise ApiError("An error ocurred creating "
+                                       "the env object.", 500)
+            else:
+                raise ApiError("Missing `env_name` in env metadata.", 400)
         else:
-            message = "Missing env metadata."
-            return {'message': message}, 400
+            raise ApiError("Missing env metadata.", 400)
 
-        if 'env_name' in env:
-            e = EnvModel.find_by_name(env['env_name'])
-            if not e:
-                e = EnvModel(env['env_name'])
-                try:
-                    e.save_to_db()
-                except Exception as error:
-                    message = "An error occurred creating the env object."
-                    return {'message': message, 'error': str(error)}, 500
+        return e.id
+
+    def create_job(self, env_id):
+        """ Creates the job object
+
+        Parameters
+        ----------
+        env_id : `int`
+            id of the environment associated with the job.
+
+        Return
+        ------
+        job_id : `int`
+            id of the job created
+        """
+
+        # job metadata contains arbitrary metadata plus
+        # env metadata and packages
+        meta = self.data['meta'].copy()
+
+        # we extract the env metadata
+        env = meta.pop('env')
+
+        # and remove the packages, they will be inserted later.
+        if 'packages' in meta:
+            del meta['packages']
         else:
-            message = "Missing `env_name` in env metadata."
-            return {"message": message}, 400
+            raise ApiError("Missing packages metadata.", 400)
 
-        # Now extract the package metadata
-        if 'packages' in data['meta']:
-            packages = data['meta'].pop('packages')
-        else:
-            message = "Missing packages metadata."
-            return {'message': message}
-
-        # At this point what remains in data['meta'] are
-        # arbitrary metadata associated with the job, see
-        # tests/verify_job.ipynb for a complete example
-
-        j = JobModel(e.id, env, data['meta'])
+        # what remains in meta is the arbitrary metadata we want to save
+        j = JobModel(env_id, env, meta)
 
         try:
             j.save_to_db()
-        except Exception as error:
-            message = "An error occurred creating the job object."
-            return {'message': message, 'error': str(error)}, 500
+        except Exception:
+            raise ApiError("An error occurred creating "
+                           "the job object.", 500)
 
-        # Insert packages
-        if packages:
-            for package in packages:
-                p = PackageModel(j.id, **packages[package])
-                try:
-                    p.save_to_db()
-                except Exception as error:
-                    message = "An error occurred inserting packages for " \
-                              "job `{}`.".format(j.id)
-                    return {'message': message, 'error': str(error)}, 500
+        return j.id
 
-        # Insert measurements
-        if 'measurements' in data:
-            for measurement in data['measurements']:
+    def insert_packages(self, job_id):
+        """Insert packages associated with the job.
 
-                if measurement and 'metric' in measurement:
-                    metric_name = measurement['metric']
-                else:
-                    message = "You must provide a list of measurements" \
-                              "and the associated metric name."
+        Parameters
+        ----------
+        job_id : `int`
+            id of the job object previously created.
+        """
+        meta = self.data['meta']
+        if 'packages' in meta:
+            packages = meta['packages']
+        else:
+            raise ApiError("Missing packages metadata.", 400)
 
-                    return {"message": message}, 400
+        for package in packages:
+            p = PackageModel(job_id, **packages[package])
+            try:
+                p.save_to_db()
+            except Exception:
+                raise ApiError("An error occurred inserting packages", 500)
 
-                # If the associated metric is not found return
-                metric = MetricModel.find_by_name(metric_name)
+    def insert_measurements(self, job_id):
+        """Insert measurements associated with the job.
 
-                if metric:
-                    m = MeasurementModel(j.id, metric.id, **measurement)
-                else:
-                    message = "Metric `{}` not found, it looks like the " \
-                              "metrics definition in SQuaSH is not up to " \
-                              "date.".format(metric_name)
-                    return {"message": message}, 400
+        Parameters
+        ----------
+        job_id : `int`
+            id of the job object previously created.
+        """
+        measurements = self.data['measurements']
 
-                try:
-                    m.save_to_db()
-                except Exception as error:
-                    message = "An error occurred inserting measurements for " \
-                              "job `{}`.".format(j.id)
-                    return {'message': message, 'error': str(error)}, 500
+        for measurement in measurements:
+            if measurement and 'metric' in measurement:
+                metric_name = measurement['metric']
+            else:
+                raise ApiError("You must provide a list of measurements "
+                               "and the associated metric name.", 400)
 
-        # Insert blobs
-        if 'blobs' in data:
-            for blob in data['blobs']:
-                b = BlobModel(j.id, **blob)
-                try:
-                    b.save_to_db()
-                    print("saving data blob")
-                except Exception as error:
-                    message = "An error occurred inserting blobs for" \
-                              "job `{}`.".format(j.id)
-                    return {'message': message, 'error': str(error)}, 500
+            metric = MetricModel.find_by_name(metric_name)
 
-        message = "Job `{}` successfully created".format(j.id)
-        return {'message': message}, 201
+            if metric:
+                m = MeasurementModel(job_id, metric.id, **measurement)
+            else:
+                raise ApiError("Metric `{}` not found, it looks like "
+                               "the metrics definition is out of "
+                               "date.".format(metric_name), 400)
+
+            # Insert data blobs associated with this measurement
+            blobs = self.data['blobs']
+
+            m.blobs = []
+
+            for blob in blobs:
+                identifier = blob['identifier']
+                if identifier in measurement['blob_refs']:
+                    name = blob['name']
+                    b = BlobModel(identifier, name)
+                    m.blobs.append(b)
+
+            try:
+                m.save_to_db()
+            except Exception:
+                raise ApiError("An error occurred inserting "
+                               "measurements", 500)
+
+    def upload_job(self, job_id):
+        """Upload job document to S3 and register the S3 URI
+        location.
+
+        Parameters
+        ----------
+        job_id : `int`
+            id of the job object previously created
+        """
+        key = str(job_id)
+        body = json.dumps(self.data)
+
+        # async celery task
+        upload_object.delay(key, body)
+
+        # update the s3_uri field
+        job = JobModel.find_by_id(job_id)
+        job.s3_uri = get_s3_uri(key)
+        try:
+            job.save_to_db()
+        except Exception:
+            raise ApiError("An error occurred registering "
+                           "the S3 URI location.", 500)
+
+    def upload_blobs(self):
+
+        blobs = self.data['blobs']
+
+        for blob in blobs:
+
+            key = blob['identifier']
+            body = json.dumps(blob['data'])
+            metadata = {'name': blob['name']}
+
+            # async celery task
+            upload_object.delay(key, body, metadata)
+
+            # update the s3_uri field
+            b = BlobModel.find_by_identifier(key)
+            b.s3_uri = get_s3_uri(key)
+            try:
+                b.save_to_db()
+            except Exception:
+                raise ApiError("An error ocurred registering "
+                               "the S3 URI location.", 500)

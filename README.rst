@@ -8,36 +8,58 @@ The SQuaSH RESTful API is a web app implemented in Flask for managing the SQuaSH
 Requirements
 ============
 
-The SQuaSH RESTful API is deployed as part of the `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ and requires a MySQL 5.7 instance on Google Cloud SQL.
-We assume this instance exists in the `sqre` project. 
+The SQuaSH RESTful API is deployed as part of the `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ and requires a MySQL 5.7 instance on Google Cloud SQL. We assume this instance exists in the `sqre` project.
 
-The steps used to connect the `squash-restful-api` app running on GKE with the Google Cloud SQL instance are documented `here <https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine>`_.
-The Service account private key created in this step and referred below as `PROXY_KEY_FILE_PATH` is stored in SQuaRE 1Password repository and identified as *SQuaSH Cloud SQL service account key*.
+The steps used to connect the `squash-restful-api` app running on GKE with the Google Cloud SQL instance are documented `here <https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine>`_. The Service account private key created at this step, referred below as `PROXY_KEY_FILE_PATH`, is stored in SQuaRE 1Password account and identified as *SQuaSH Cloud SQL service account key*.
 
-See also `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ on how to configure `kubectl` to access you GKE cluster, use the correct *namespace* for this deployment and create the TLS secrets used
-below. 
+See also `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ on how to configure `kubectl` to access you GKE cluster, use the correct *namespace* for this deployment and create the TLS secret used below.
+
 
 Kubernetes deployment
 ---------------------
 
-Assuming you have `kubectl` configured to access your GKE cluster, you can deploy the `squash-restful-api` using:
+
+For a `demo` deployment you should follow the instructions at `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ repository and run the commands below *before* deploying the SQuaSH RESTful API:
+
+Assuming you have `kubectl` configured to access your GKE cluster:
 
 .. code-block::
 
+ git clone https://github.com/lsst-sqre/squash-deployment
+ cd squash-deployment
+
+ # Create the deployment namespace
+ export NAMESPACE=demo
+ make namespace
+
+ # Create the TLS secret
+ make tls-certs
+
+ git clone https://github.com/lsst-sqre/squash-restful-api
  cd squash-restful-api
  
- # Used to create the cloudsql-db-credentials secret
+ # Create secret with the Cloud SQL Proxy key and the database password
  export PROXY_KEY_FILE_PATH=<path to the JSON file with the SQuaSH Cloud SQL service account key.>
- export SQUASH_DB_PASSWORD=<password created for the proxyuser when the Cloud SQL instance was configured.>
+ export SQUASH_DB_PASSWORD=<password created for the user 'proxyuser' when the Cloud SQL instance was configured.>
  
- # create secrets with cloud sql proxy key and database password
  make cloudsql-credentials
+
+ # Create secret with AWS credentials
+ export AWS_ACCESS_KEY_ID=<the aws access key id>
+ export AWS_SECRET_ACCESS_KEY=<the aws secret access key>
+
+ make aws-secret
   
- # The app default user
- export SQUASH_DEFAULT_USER=<the admin user for the production depoyment>
- export SQUASH_DEFAULT_PASSWORD=<password for the admin user>
+ # Set the application default user
+ export SQUASH_DEFAULT_USER=<the squash api admin user>
+ export SQUASH_DEFAULT_PASSWORD=<password for the squash api admin user>
  
  TAG=latest make service deployment
+
+ # Create the service name
+ cd ..
+ export SQUASH_SERVICE=squash-restful-api
+ make name
 
 
 Debug
@@ -55,6 +77,8 @@ and the container logs using:
 
  kubectl logs deployment/squash-restful-api nginx
  kubectl logs deployment/squash-restful-api api
+ kubectl logs deployment/squash-restful-api worker
+ kubectl logs deployment/squash-restful-api redis
  kubectl logs deployment/squash-restful-api cloudsql-proxy
  
 You can open a terminal inside the `api` container with:
@@ -67,7 +91,6 @@ You can open a terminal inside the `api` container with:
 Development workflow
 --------------------
 
-For development, you may install the dependencies and set up a local MySQL 5.7+ instance:
 
 1. Install the software dependencies
 
@@ -85,12 +108,16 @@ For development, you may install the dependencies and set up a local MySQL 5.7+ 
  source env/bin/activate
  pip install -r requirements.txt
 
-2. Create the development database
+2. Initialize the MySQL, Celery and Redis instances for development
 
 .. code-block::
 
- mysql -u root
- mysql> create database squash_dev;
+ make mysql
+ make db
+ <new terminal session>
+ make celery
+ <new terminal session>
+ make redis
 
 3. Run tests
 
@@ -112,4 +139,5 @@ or check the available commands with
 
 The app will run at http://localhost:5000
 
+5. Exercise the API running the `test API notebook <https://github.com/lsst-sqre/squash-rest-api/blob/master/tests/test_api.ipynb>`_.
 
