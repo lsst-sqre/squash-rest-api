@@ -325,18 +325,20 @@ class Job(Resource):
 
         for blob in blobs:
 
-            key = blob['identifier']
+            identifier = blob['identifier']
             body = json.dumps(blob['data'])
             metadata = {'name': blob['name']}
 
             # async celery task
-            upload_object.delay(key, body, metadata)
+            upload_object.delay(identifier, body, metadata)
 
             # update the s3_uri field
-            b = BlobModel.find_by_identifier(key)
-            b.s3_uri = get_s3_uri(key)
-            try:
-                b.save_to_db()
-            except Exception:
-                raise ApiError("An error ocurred registering "
-                               "the S3 URI location.", 500)
+            saved_blobs = BlobModel.find_by_identifier(identifier)
+
+            for saved_blob in saved_blobs:
+                saved_blob.s3_uri = get_s3_uri(identifier)
+                try:
+                    saved_blob.save_to_db()
+                except Exception:
+                    raise ApiError("An error ocurred registering "
+                                   "the S3 URI location.", 500)
