@@ -85,8 +85,8 @@ class MetricModel(db.Model):
     # usually with a handle to the document, a url and a page number.
     reference = db.Column(JSON())
 
-    specification = db.relationship('SpecificationModel')
-    measurement = db.relationship('MeasurementModel')
+    specification = db.relationship('SpecificationModel', lazy='joined')
+    measurement = db.relationship('MeasurementModel', lazy='joined')
 
     def __init__(self, name, package=None, display_name=None,
                  description=None, unit=None, tags=None,
@@ -187,7 +187,7 @@ class EnvModel(db.Model):
     # Environment display name
     display_name = db.Column(db.String(64), nullable=False)
 
-    job = db.relationship("JobModel", lazy="dynamic")
+    job = db.relationship("JobModel", lazy='joined')
 
     def __init__(self, name):
 
@@ -221,23 +221,23 @@ class JobModel(db.Model):
 
     # Id of the environment this job has run
     env_id = db.Column(db.Integer, db.ForeignKey('env.id'))
-    # Timestamp when the lsst.verify job was created
+    # Timestamp when the actual job object was created
     date_created = db.Column(db.TIMESTAMP, nullable=False,
                              server_default=now())
     env = db.Column(JSON())
     meta = db.Column(JSON())
-
-    # Measurements are deleted upon job deletion
-    measurements = db.relationship("MeasurementModel", lazy="dynamic",
-                                   cascade="all, delete-orphan")
-
-    # Packages are deleted upon job deletion
-    packages = db.relationship("PackageModel", lazy="dynamic",
-                               cascade="all, delete-orphan")
-
     # URI of the object store repository for this job, note that this
     # field is updated only after the job object is created
     s3_uri = db.Column(db.Unicode(255), default=None)
+
+    # Measurements are deleted upon job deletion
+    measurements = db.relationship("MeasurementModel", lazy="joined",
+                                   cascade="all, delete-orphan")
+
+    # Packages are deleted upon job deletion
+    packages = db.relationship("PackageModel", lazy="joined",
+                               cascade="all, delete-orphan")
+
 
     def __init__(self, env_id, env, meta):
 
@@ -248,13 +248,15 @@ class JobModel(db.Model):
     def json(self):
 
         # Reconstruct the lsst.verify job metadata before returning
-        self.meta['packages'] = [pkg.json() for pkg in self.packages.all()]
+        self.meta['packages'] = [pkg.json() for pkg in self.packages]
         self.meta['env'] = self.env
 
-        return {'measurements': [meas.json() for meas in
-                                 self.measurements.all()],
-                'blobs': [blob.json() for blob in
-                          self.blobs.all()],
+        return {'id': self.id,
+                'date_created': self.date_created.\
+                    strftime("%Y-%m-%dT%H:%M:%SZ"),
+                's3_uri': self.s3_uri,
+                'measurements': [meas.json() for meas in
+                                 self.measurements],
                 'meta': self.meta}
 
     @classmethod
@@ -381,7 +383,8 @@ class MeasurementModel(db.Model):
     def json(self):
         return {'value': self.value,
                 'unit': self.unit,
-                'metric': self.metric_name}
+                'metric': self.metric_name,
+                'blobs': [blob.json() for blob in self.blobs]}
 
     @classmethod
     def find_by_job_id(cls, job_id):
@@ -426,7 +429,7 @@ class BlobModel(db.Model):
 
     @classmethod
     def find_by_identifier(cls, identifier):
-        return cls.query.filter_by(identifier=identifier).first()
+        return cls.query.filter_by(identifier=identifier).all()
 
     def save_to_db(self):
         db.session.add(self)
