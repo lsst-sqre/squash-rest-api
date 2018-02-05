@@ -14,6 +14,7 @@ from .api_v1.measurement import Measurement, MeasurementList
 from .api_v1.job import Job, JobWithArg
 from .api_v1.jenkins import Jenkins
 from .api_v1.version import Version
+from .api_v1.monitor import Monitor
 
 
 def create_app(profile):
@@ -86,6 +87,9 @@ def create_app(profile):
                      endpoint='measurement')
     api.add_resource(MeasurementList, '/measurements',
                      endpoint='measurements')
+
+    # Monitor
+    api.add_resource(Monitor, '/monitor', endpoint='monitor')
 
     # Miscellaneous
     api.add_resource(Version, '/version', endpoint='version')

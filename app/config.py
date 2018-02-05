@@ -7,9 +7,6 @@ from datetime import timedelta
 SQUASH_DB_USER = os.environ.get('SQUASH_DB_USER', 'root')
 SQUASH_DB_PASSWORD = os.environ.get('SQUASH_DB_PASSWORD')
 
-# Not used in production (kubernetes deployment)
-SQUASH_DB_HOST = os.environ.get('SQUASH_DB_HOST', 'localhost')
-
 
 class Config(object):
     """Base class configuration"""
@@ -64,10 +61,10 @@ class Development(Config):
     DEFAULT_USER = 'mole'
     DEFAULT_PASSWORD = 'desert'
 
-    SQLALCHEMY_DATABASE_URI = "mysql+pymysql://{}:{}@{}/squash_dev". \
-        format(SQUASH_DB_USER, SQUASH_DB_PASSWORD, SQUASH_DB_HOST)
+    SQLALCHEMY_DATABASE_URI = "mysql+pymysql://{}:{}@127.0.0.1/squash_dev". \
+        format(SQUASH_DB_USER, SQUASH_DB_PASSWORD)
 
-    SQLALCHEMY_ECHO = False
+    SQLALCHEMY_ECHO = True
 
 
 class Testing(Config):
@@ -79,7 +76,7 @@ class Testing(Config):
     DEFAULT_USER = 'mole'
     DEFAULT_PASSWORD = 'desert'
 
-    SQLALCHEMY_DATABASE_URI = "mysql+pymysql://{}:{}@{}/squash_test". \
-        format(SQUASH_DB_USER, SQUASH_DB_PASSWORD, SQUASH_DB_HOST)
+    SQLALCHEMY_DATABASE_URI = "mysql+pymysql://{}:{}@127.0.0.1/squash_test". \
+        format(SQUASH_DB_USER, SQUASH_DB_PASSWORD)
 
     SQLALCHEMY_ECHO = False
