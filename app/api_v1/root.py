@@ -18,6 +18,7 @@ class Root(Resource):
                     'users': self.external_url('users'),
                     'register': self.external_url('register'),
                     'version': self.external_url('version'),
-                    'auth': self.external_url('_default_auth_request_handler')}
+                    'auth': self.external_url('_default_auth_request_handler'),
+                    'monitor': self.external_url('monitor')}
 
         return response
