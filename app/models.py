@@ -221,6 +221,9 @@ class JobModel(db.Model):
 
     # Id of the environment this job has run
     env_id = db.Column(db.Integer, db.ForeignKey('env.id'))
+    # Name of the dataset used in this job, extrated from the
+    # environment
+    ci_dataset = db.Column(db.String(32), default=None)
     # Timestamp when the actual job object was created
     date_created = db.Column(db.TIMESTAMP, nullable=False,
                              server_default=now())
@@ -238,10 +241,11 @@ class JobModel(db.Model):
     packages = db.relationship("PackageModel", lazy="joined",
                                cascade="all, delete-orphan")
 
-
     def __init__(self, env_id, env, meta):
 
         self.env_id = env_id
+        if 'ci_dataset' in env:
+            self.ci_dataset = env['ci_dataset']
         self.env = env
         self.meta = meta
 
@@ -252,8 +256,8 @@ class JobModel(db.Model):
         self.meta['env'] = self.env
 
         return {'id': self.id,
-                'date_created': self.date_created.\
-                    strftime("%Y-%m-%dT%H:%M:%SZ"),
+                'date_created':
+                    self.date_created.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 's3_uri': self.s3_uri,
                 'measurements': [meas.json() for meas in
                                  self.measurements],
@@ -363,7 +367,7 @@ class MeasurementModel(db.Model):
     job_id = db.Column(db.Integer, db.ForeignKey('job.id'))
 
     blobs = db.relationship('BlobModel', secondary=measurement_blob,
-                            lazy='subquery')
+                            lazy='dynamic')
 
     def __init__(self, job_id, metric_id, value=0, unit=None,
                  metric='', identifier=None, blob_refs=None):
