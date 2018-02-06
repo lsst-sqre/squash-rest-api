@@ -1,7 +1,8 @@
+import os
 import numpy as np
-
-from .db import db
-from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
+from werkzeug.security import generate_password_hash,\
+     check_password_hash
 
 # Implements JSON data type in MySQL 5.7 see
 # https://jira.lsstcorp.org/browse/DM-12191
@@ -9,6 +10,10 @@ from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.dialects.mysql import TIMESTAMP
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
+
+from .db import db
+
+SQUASH_ETL_MODE = os.environ.get('SQUASH_ETL_MODE', False)
 
 
 # https://jira.lsstcorp.org/browse/DM-12193
@@ -246,6 +251,11 @@ class JobModel(db.Model):
         self.env_id = env_id
         if 'ci_dataset' in env:
             self.ci_dataset = env['ci_dataset']
+        # Preserve date from the env metadata if SQUASH is running
+        # in ETL mode
+        if SQUASH_ETL_MODE:
+            self.date_created = datetime.strptime(env['date'],
+                                                  "%Y-%m-%dT%H:%M:%SZ")
         self.env = env
         self.meta = meta
 
