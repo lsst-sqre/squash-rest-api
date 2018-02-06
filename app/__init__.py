@@ -12,6 +12,7 @@ from .api_v1.metric import Metric, MetricList
 from .api_v1.specification import Specification, SpecificationList
 from .api_v1.measurement import Measurement, MeasurementList
 from .api_v1.job import Job, JobWithArg
+from .api_v1.status import Status
 from .api_v1.jenkins import Jenkins
 from .api_v1.version import Version
 from .api_v1.monitor import Monitor
@@ -68,6 +69,9 @@ def create_app(profile):
 
     # Resource for jobs in the jenkins enviroment
     api.add_resource(Jenkins, '/jenkins/<string:ci_id>', endpoint='jenkins')
+
+    # Status of the upload
+    api.add_resource(Status, '/status/<string:task_id>', endpoint='status')
 
     # User resources
     api.add_resource(User, '/user/<string:username>', endpoint='user')
