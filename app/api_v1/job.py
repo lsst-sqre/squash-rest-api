@@ -287,11 +287,12 @@ class Job(Resource):
             m.blobs = []
 
             for blob in blobs:
-                identifier = blob['identifier']
-                if identifier in measurement['blob_refs']:
-                    name = blob['name']
-                    b = BlobModel(identifier, name)
-                    m.blobs.append(b)
+                if blob and 'identifier' in blob and 'name' in blob:
+                    identifier = blob['identifier']
+                    if identifier in measurement['blob_refs']:
+                        name = blob['name']
+                        b = BlobModel(identifier, name)
+                        m.blobs.append(b)
 
             try:
                 m.save_to_db()
@@ -330,10 +331,8 @@ class Job(Resource):
         blobs = self.data['blobs']
 
         for blob in blobs:
-
-            if 'identifier' in blob and 'data' in blob \
+            if blob and 'identifier' in blob and 'data' in blob \
                     and 'name' in blob:
-
                 identifier = blob['identifier']
                 data = json.dumps(blob['data'])
                 metadata = {'name': blob['name']}
