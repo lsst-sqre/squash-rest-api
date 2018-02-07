@@ -50,6 +50,8 @@ spec:
             value: {{ SQUASH_DEFAULT_USER }}
           - name: SQUASH_DEFAULT_PASSWORD
             value: {{ SQUASH_DEFAULT_PASSWORD }}
+          - name: SQUASH_ETL_MODE
+            value: {{ SQUASH_ETL_MODE }}
           - name: CELERY_BROKER_URL
             value: 'redis://localhost:6379'
           - name: S3_BUCKET
@@ -90,6 +92,8 @@ spec:
             value: {{ SQUASH_DEFAULT_USER }}
           - name: SQUASH_DEFAULT_PASSWORD
             value: {{ SQUASH_DEFAULT_PASSWORD }}
+          - name: SQUASH_ETL_MODE
+            value: {{ SQUASH_ETL_MODE }}
           - name: CELERY_BROKER_URL
             value: 'redis://localhost:6379'
           - name: S3_BUCKET

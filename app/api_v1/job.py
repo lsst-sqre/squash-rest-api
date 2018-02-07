@@ -3,6 +3,7 @@ import json
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
 from flask import current_app as app
+from flask import url_for
 
 from app.tasks.s3 import get_s3_uri, upload_object
 from app.error import ApiError
@@ -155,20 +156,23 @@ class Job(Resource):
 
         # async
         try:
-            self.upload_job(job_id)
-        except ApiError as err:
-            app.logger.error(err.message)
-            return {'message': err.message}, err.status_code
-
-        # async
-        try:
             self.upload_blobs()
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
+        # async, the status of the job upload task can be accessed
+        # from the /status resource
+        try:
+            task = self.upload_job(job_id)
+        except ApiError as err:
+            app.logger.error(err.message)
+            return {'message': err.message}, err.status_code
+
         message = "Request for creating Job `{}` received".format(job_id)
-        return {'message': message}, 202
+        return {'message': message, 'status': url_for('status',
+                                                      task_id=task.id,
+                                                      _external=True)}, 202
 
     def check_or_create_env(self):
         """Check if env (e.g. Jenkins) exists in the db,
@@ -283,11 +287,12 @@ class Job(Resource):
             m.blobs = []
 
             for blob in blobs:
-                identifier = blob['identifier']
-                if identifier in measurement['blob_refs']:
-                    name = blob['name']
-                    b = BlobModel(identifier, name)
-                    m.blobs.append(b)
+                if blob and 'identifier' in blob and 'name' in blob:
+                    identifier = blob['identifier']
+                    if identifier in measurement['blob_refs']:
+                        name = blob['name']
+                        b = BlobModel(identifier, name)
+                        m.blobs.append(b)
 
             try:
                 m.save_to_db()
@@ -308,7 +313,7 @@ class Job(Resource):
         body = json.dumps(self.data)
 
         # async celery task
-        upload_object.delay(key, body)
+        task = upload_object.delay(key, body)
 
         # update the s3_uri field
         job = JobModel.find_by_id(job_id)
@@ -319,26 +324,29 @@ class Job(Resource):
             raise ApiError("An error occurred registering "
                            "the S3 URI location.", 500)
 
+        return task
+
     def upload_blobs(self):
 
         blobs = self.data['blobs']
 
         for blob in blobs:
+            if blob and 'identifier' in blob and 'data' in blob \
+                    and 'name' in blob:
+                identifier = blob['identifier']
+                data = json.dumps(blob['data'])
+                metadata = {'name': blob['name']}
 
-            identifier = blob['identifier']
-            body = json.dumps(blob['data'])
-            metadata = {'name': blob['name']}
+                # async celery task
+                upload_object.delay(identifier, data, metadata)
 
-            # async celery task
-            upload_object.delay(identifier, body, metadata)
+                # update the s3_uri field
+                saved_blobs = BlobModel.find_by_identifier(identifier)
 
-            # update the s3_uri field
-            saved_blobs = BlobModel.find_by_identifier(identifier)
-
-            for saved_blob in saved_blobs:
-                saved_blob.s3_uri = get_s3_uri(identifier)
-                try:
-                    saved_blob.save_to_db()
-                except Exception:
-                    raise ApiError("An error ocurred registering "
-                                   "the S3 URI location.", 500)
+                for saved_blob in saved_blobs:
+                    saved_blob.s3_uri = get_s3_uri(identifier)
+                    try:
+                        saved_blob.save_to_db()
+                    except Exception:
+                        raise ApiError("An error ocurred registering "
+                                       "the S3 URI location.", 500)

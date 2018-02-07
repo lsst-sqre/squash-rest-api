@@ -3,15 +3,12 @@ from flask_restful import Resource
 
 
 class Root(Resource):
+    """ List of urls we want in the API root."""
 
     def external_url(self, endpoint):
         return url_for(endpoint, _external=True)
 
     def get(self):
-
-        # List of URLs we want in the API root, one can add more
-        # but remember that removing may impact the clients
-
         response = {'job': self.external_url('job'),
                     'metrics': self.external_url('metrics'),
                     'apidocs': self.external_url('flasgger.apidocs'),

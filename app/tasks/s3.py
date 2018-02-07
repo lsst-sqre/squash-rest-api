@@ -25,8 +25,8 @@ def get_s3_uri(key):
     return s3_uri
 
 
-@celery.task
-def upload_object(key, body, metadata=None, acl=None,
+@celery.task(bind=True)
+def upload_object(self, key, body, metadata=None, acl=None,
                   content_type='application/json'):
     """Upload an arbitrary object to an S3 bucket.
 
@@ -76,6 +76,7 @@ def upload_object(key, body, metadata=None, acl=None,
     if content_type is not None:
         args['ContentType'] = content_type
 
+    self.update_state(state='STARTED')
     object.put(Body=body, **args)
 
     s3_uri = get_s3_uri(key)
