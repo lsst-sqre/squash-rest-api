@@ -1,6 +1,8 @@
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
 
+from sqlalchemy.orm import noload
+
 from ..models import MetricModel
 
 
@@ -156,6 +158,7 @@ class MetricList(Resource):
                         type=dict,
                         action="append"
                         )
+    parser.add_argument('package')
 
     def get(self):
         """
@@ -163,12 +166,28 @@ class MetricList(Resource):
         ---
         tags:
           - Metrics
+        parameters:
+          - name: package
+            in: url
+            type: string
+            description: Name of the verification package to filter
         responses:
           200:
             description: List of metrics successfully retrieved.
         """
-        return {'metrics': [metric.json() for metric
-                            in MetricModel.query.all()]}
+
+        queryset = MetricModel.query
+
+        args = self.parser.parse_args()
+
+        package = args['package']
+
+        if package:
+            queryset = queryset.filter(MetricModel.package == package)
+
+        return {'metrics': [metric.json() for metric in
+                            queryset.options(noload(MetricModel.measurement),
+                            noload(MetricModel.specification)).all()]}
 
     @jwt_required()
     def post(self):

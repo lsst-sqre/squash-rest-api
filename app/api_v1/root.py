@@ -11,11 +11,15 @@ class Root(Resource):
     def get(self):
         response = {'job': self.external_url('job'),
                     'metrics': self.external_url('metrics'),
+                    'specs': self.external_url('specs'),
                     'apidocs': self.external_url('flasgger.apidocs'),
                     'users': self.external_url('users'),
                     'register': self.external_url('register'),
                     'version': self.external_url('version'),
                     'auth': self.external_url('_default_auth_request_handler'),
-                    'monitor': self.external_url('monitor')}
+                    'monitor': self.external_url('monitor'),
+                    'default': self.external_url('default'),
+                    'datasets': self.external_url('datasets'),
+                    'packages': self.external_url('packages')}
 
         return response

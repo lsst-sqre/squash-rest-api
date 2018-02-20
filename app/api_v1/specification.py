@@ -167,6 +167,7 @@ class SpecificationList(Resource):
                         type=dict,
                         action="append"
                         )
+    parser.add_argument('metric')
 
     def get(self):
         """
@@ -174,12 +175,28 @@ class SpecificationList(Resource):
         ---
         tags:
           - Metric Specifications
+        parameters:
+          - name: metric
+            in: url
+            type: string
+            description: A full qualified name for the Metric,
+            e.g `validate_drp.AM1`
         responses:
           200:
             description: List of metric specifications successfully retrieved.
         """
+
+        queryset = SpecificationModel.query.join(MetricModel)
+
+        args = self.parser.parse_args()
+
+        metric = args['metric']
+
+        if metric:
+            queryset = queryset.filter(MetricModel.name == metric)
+
         return {'specs': [spec.json() for spec
-                          in SpecificationModel.query.all()]}
+                          in queryset.all()]}
 
     @jwt_required()
     def post(self):
