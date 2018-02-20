@@ -48,7 +48,7 @@ db: check-squash-db-password
 redis:
 	docker run --rm --name redis -p 6379:6379 redis
 
-celery:
+celery: check-aws-credentials
 	celery -A app.tasks -E -l DEBUG worker
 
 run: test
@@ -73,7 +73,7 @@ configmap:
 	kubectl delete --ignore-not-found=true configmap squash-restful-api-nginx-conf
 	kubectl create configmap squash-restful-api-nginx-conf --from-file=$(NGINX_CONFIG)
 
-aws-secret: check-aws-creds
+aws-secret: check-aws-credentials
 	@echo "Creating AWS secret"
 	kubectl delete --ignore-not-found=true secrets squash-aws-creds
 	kubectl create secret generic squash-aws-creds \
@@ -101,7 +101,7 @@ check-cloudsql-credentials:
 check-squash-db-password:
 	@if test -z ${SQUASH_DB_PASSWORD}; then echo "Error: SQUASH_DB_PASSWORD is undefined."; exit 1; fi
 
-check-aws-creds:
+check-aws-credentials:
 	@if [ -z ${AWS_ACCESS_KEY_ID} ]; \
 	then echo "Error: AWS_ACCESS_KEY_ID is undefined."; \
        exit 1; \
