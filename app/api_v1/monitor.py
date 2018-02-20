@@ -14,7 +14,7 @@ class Monitor(Resource):
 
     def get(self):
         """
-        Retrieve the data structure used to feed the monitor app.
+        Retrieve the data structure used to feed the SQuaSH Monitor app.
         ---
         tags:
           - Apps
@@ -53,11 +53,11 @@ class Monitor(Resource):
             # by default shows last month of data
             start = end - datetime.timedelta(weeks=4)
 
-            if period == "Last year":
+            if period == "Last Year":
                 start = end - datetime.timedelta(weeks=48)
-            elif period == "Last 6 months":
+            elif period == "Last 6 Months":
                 start = end - datetime.timedelta(weeks=24)
-            elif period == "Last 3 months":
+            elif period == "Last Month":
                 start = end - datetime.timedelta(weeks=12)
 
             if period != "All":
@@ -65,30 +65,32 @@ class Monitor(Resource):
 
         queryset = queryset.order_by(Job.date_created.asc())
 
+        # TODO: test environment first
         generator = queryset.values(Measurement.value,
                                     Measurement.metric_name,
-                                    Metric.package,
                                     Job.date_created,
-                                    Job.ci_dataset)
+                                    Job.env['ci_id'],
+                                    Job.env['ci_url'],
+                                    )
 
         value_list = []
         metric_name_list = []
-        package_list = []
         date_created_list = []
-        ci_dataset_list = []
+        ci_id_list = []
+        ci_url_list = []
 
-        for value, metric_name, package, date_created, ci_dataset \
+        for value, metric_name,  date_created, ci_id, ci_url \
                 in generator:
 
             value_list.append(value)
             metric_name_list.append(metric_name)
-            package_list.append(package)
             date_created_list.append(date_created.
                                      strftime("%Y-%m-%dT%H:%M:%SZ"))
-            ci_dataset_list.append(ci_dataset)
+            ci_id_list.append(ci_id)
+            ci_url_list.append(ci_url)
 
         return {'value': value_list,
                 'date_created': date_created_list,
-                'package': package_list,
                 'metric_name': metric_name_list,
-                'ci_dataset': ci_dataset_list}
+                'ci_id': ci_id_list,
+                'ci_url': ci_url_list}
