@@ -39,10 +39,12 @@ test:
 mysql: check-squash-db-password
 	docker run --rm --name mysql -e MYSQL_ROOT_PASSWORD=${SQUASH_DB_PASSWORD} -p 3306:3306 -d mysql:5.7
 
-db: check-squash-db-password
+dropdb: check-squash-db-password
 	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'DROP DATABASE squash_dev'"
-	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'CREATE DATABASE squash_dev'"
 	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'DROP DATABASE squash_test'"
+
+createdb: check-squash-db-password
+	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'CREATE DATABASE squash_dev'"
 	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'CREATE DATABASE squash_test'"
 
 redis:

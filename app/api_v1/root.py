@@ -20,6 +20,8 @@ class Root(Resource):
                     'monitor': self.external_url('monitor'),
                     'default': self.external_url('default'),
                     'datasets': self.external_url('datasets'),
-                    'packages': self.external_url('packages')}
+                    'packages': self.external_url('packages'),
+                    'code_changes': self.external_url('code_changes')
+                    }
 
         return response

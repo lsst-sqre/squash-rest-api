@@ -108,16 +108,17 @@ Development workflow
  source env/bin/activate
  pip install -r requirements.txt
 
-2. Initialize the MySQL, Celery and Redis instances for development
+2. Initialize the MySQL, Redis, and Celery instances for development
 
 .. code-block::
 
  make mysql
- make db
- <new terminal session>
- make celery
+ make dropdb  # if there's a previous db in there
+ make createdb
  <new terminal session>
  make redis
+ <new terminal session>
+ make celery
 
 3. Run tests
 
