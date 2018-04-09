@@ -1,3 +1,5 @@
+import datetime
+
 from flask_restful import Resource, reqparse
 
 import itertools
@@ -9,6 +11,7 @@ from ..models import PackageModel as Package
 class CodeChanges(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('ci_dataset')
+    parser.add_argument('period')
 
     def pairwise(self, iterable):
         """Create a list of tuple pairs from a list
@@ -97,6 +100,24 @@ class CodeChanges(Resource):
         if ci_dataset:
             queryset = queryset.filter(Job.ci_dataset == ci_dataset)
 
+        period = args['period']
+
+        if period:
+            end = datetime.datetime.today()
+
+            # by default shows last month of data
+            start = end - datetime.timedelta(weeks=4)
+
+            if period == "Last Year":
+                start = end - datetime.timedelta(weeks=48)
+            elif period == "Last 6 Months":
+                start = end - datetime.timedelta(weeks=24)
+            elif period == "Last Month":
+                start = end - datetime.timedelta(weeks=12)
+
+            if period != "All":
+                queryset = queryset.filter(Job.date_created > start)
+
         queryset = queryset.order_by(Job.date_created.asc())
 
         generator = queryset.values(Job.env['ci_id'],
@@ -111,4 +132,16 @@ class CodeChanges(Resource):
 
         code_changes = self.compute_code_changes(resultset)
 
-        return {'code_changes': code_changes}
+        ci_id_list = []
+        packages_list = []
+        count_list = []
+
+        for code_change in code_changes:
+            ci_id_list.append(code_change['ci_id'])
+            packages_list.append(code_change['packages'])
+            count_list.append(code_change['count'])
+
+        return {'ci_id': ci_id_list,
+                'packages': packages_list,
+                'count': count_list
+                }
