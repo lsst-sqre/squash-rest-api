@@ -10,6 +10,7 @@ from ..models import MetricModel as Metric
 class Monitor(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('ci_dataset')
+    parser.add_argument('metric')
     parser.add_argument('period')
 
     def get(self):
@@ -41,12 +42,14 @@ class Monitor(Resource):
         args = self.parser.parse_args()
 
         ci_dataset = args['ci_dataset']
-
         if ci_dataset:
             queryset = queryset.filter(Job.ci_dataset == ci_dataset)
 
-        period = args['period']
+        metric = args['metric']
+        if metric:
+            queryset = queryset.filter(Metric.name == metric)
 
+        period = args['period']
         if period:
             end = datetime.datetime.today()
 
