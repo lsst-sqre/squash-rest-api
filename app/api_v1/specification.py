@@ -179,8 +179,9 @@ class SpecificationList(Resource):
           - name: metric
             in: url
             type: string
-            description: A full qualified name for the Metric,
-            e.g `validate_drp.AM1`
+            description: >
+                A full qualified name for the Metric,
+                e.g `validate_drp.AM1`
         responses:
           200:
             description: List of metric specifications successfully retrieved.

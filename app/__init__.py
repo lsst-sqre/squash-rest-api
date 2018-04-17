@@ -12,6 +12,7 @@ from .api_v1.metric import Metric, MetricList
 from .api_v1.specification import Specification, SpecificationList
 from .api_v1.measurement import Measurement, MeasurementList
 from .api_v1.job import Job, JobWithArg
+from .api_v1.blob import Blob
 from .api_v1.status import Status
 from .api_v1.jenkins import Jenkins
 from .api_v1.version import Version
@@ -70,6 +71,9 @@ def create_app(profile):
     # workaround at
     # https://github.com/rochacbruno/flasgger/issues/174
     api.add_resource(JobWithArg, '/job/<int:job_id>', endpoint='jobwitharg')
+
+    # Data blobs
+    api.add_resource(Blob, '/blob/<int:job_id>', endpoint='blob')
 
     # Resource for jobs in the jenkins enviroment
     api.add_resource(Jenkins, '/jenkins/<string:ci_id>', endpoint='jenkins')
