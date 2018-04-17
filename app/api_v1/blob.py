@@ -5,7 +5,6 @@ from flask_restful import Resource, reqparse
 from app.tasks.s3 import download_object
 
 from ..models import JobModel as Job
-from ..models import MeasurementModel as Measurement
 
 
 class Blob(Resource):
