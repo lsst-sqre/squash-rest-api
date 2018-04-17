@@ -36,14 +36,14 @@ test:
 	flake8 app tests
 	coverage run --source=app test.py
 
-mysql: check-squash-db-password
+mysql: check-squash-db-credentials
 	docker run --rm --name mysql -e MYSQL_ROOT_PASSWORD=${SQUASH_DB_PASSWORD} -p 3306:3306 -d mysql:5.7
 
-dropdb: check-squash-db-password
+dropdb: check-squash-db-credentials
 	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'DROP DATABASE squash_dev'"
 	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'DROP DATABASE squash_test'"
 
-createdb: check-squash-db-password
+createdb: check-squash-db-credentials
 	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'CREATE DATABASE squash_dev'"
 	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'CREATE DATABASE squash_test'"
 
@@ -82,7 +82,7 @@ aws-secret: check-aws-credentials
         --from-literal=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
         --from-literal=AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
-deployment: check-tag configmap
+deployment: check-tag check-squash-api-credentials configmap
 	@echo "Creating deployment..."
 	@$(REPLACE) $(DEPLOYMENT_TEMPLATE) $(DEPLOYMENT_CONFIG)
 	kubectl delete --ignore-not-found=true deployment squash-restful-api
@@ -96,11 +96,14 @@ service:
 check-tag:
 	@if test -z ${TAG}; then echo "Error: TAG is undefined."; exit 1; fi
 
-check-cloudsql-credentials:
-	@if test -z ${SQUASH_DB_PASSWORD}; then echo "Error: SQUASH_DB_PASSWORD is undefined."; exit 1; fi
+check-cloudsql-credentials: check-squash-db-credentials
 	@if test -z ${PROXY_KEY_FILE_PATH}; then echo "Error: PROXY_KEY_FILE_PATH is undefined."; exit 1; fi
 
-check-squash-db-password:
+check-squash-api-credentials:
+	@if test -z ${SQUASH_DEFAULT_USER}; then echo "Error: SQUASH_DEFAULT_USER is undefined."; exit 1; fi
+	@if test -z ${SQUASH_DEFAULT_PASSWORD}; then echo "Error: SQUASH_DEFAULT_PASSWORD is undefined."; exit 1; fi
+
+check-squash-db-credentials:
 	@if test -z ${SQUASH_DB_PASSWORD}; then echo "Error: SQUASH_DB_PASSWORD is undefined."; exit 1; fi
 
 check-aws-credentials:
