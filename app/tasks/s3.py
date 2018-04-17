@@ -1,5 +1,6 @@
 import os
 import boto3
+import botocore
 
 from .celery import celery
 
@@ -23,6 +24,22 @@ def get_s3_uri(key):
     """
     s3_uri = "s3://{}/{}".format(S3_BUCKET, key)
     return s3_uri
+
+
+def download_object(s3_uri):
+
+    # e.g. s3://squash.data/88c3f896fe2948788d56bdadfc468812
+    _, _, bucket, key = s3_uri.split('/')
+
+    s3 = boto3.resource('s3')
+
+    try:
+        obj = s3.Object(bucket, key)
+        data = obj.get()['Body'].read()
+    except botocore.exceptions.ClientError:
+        data = None
+
+    return data
 
 
 @celery.task(bind=True)
