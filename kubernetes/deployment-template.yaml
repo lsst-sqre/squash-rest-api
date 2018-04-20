@@ -119,7 +119,7 @@ spec:
         - name: cloudsql-proxy
           image: gcr.io/cloudsql-docker/gce-proxy:1.11
           command: ["/cloud_sql_proxy", "--dir=/cloudsql",
-                    "-instances=plasma-geode-127520:us-central1:squash-db=tcp:3306",
+                    "-instances=plasma-geode-127520:us-central1:{{ INSTANCE_CONNECTION_NAME }}=tcp:3306",
                     "-credential_file=/secrets/cloudsql/credentials.json"]
           volumeMounts:
             - name: cloudsql-instance-credentials

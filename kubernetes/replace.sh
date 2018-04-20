@@ -46,10 +46,17 @@ if [ "$SQUASH_DEFAULT_PASSWORD" == "" ]; then
     exit 1
 fi
 
+if [ "$INSTANCE_CONNECTION_NAME" == "" ]; then
+    echo "INSTANCE_CONNECTION_NAME not set."
+    exit 1
+fi
+
 sed -e "
 s/{{ TAG }}/${TAG}/
 s/{{ SQUASH_API_HOST }}/${SQUASH_API_HOST}/
 s/{{ SQUASH_DEFAULT_USER }}/${SQUASH_DEFAULT_USER}/
 s/{{ SQUASH_DEFAULT_PASSWORD }}/${SQUASH_DEFAULT_PASSWORD}/
 s/{{ SQUASH_ETL_MODE }}/\'${SQUASH_ETL_MODE}\'/
+s/{{ INSTANCE_CONNECTION_NAME }}/${INSTANCE_CONNECTION_NAME}/
+
 " $1 > $2
