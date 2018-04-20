@@ -8,46 +8,36 @@ The SQuaSH RESTful API is a web app implemented in Flask for managing the SQuaSH
 Requirements
 ============
 
-The SQuaSH RESTful API is deployed as part of the `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ and requires a MySQL 5.7 instance on Google Cloud SQL. We assume this instance exists in the `sqre` project.
+The SQuaSH RESTful API is part of the `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ follow
+the steps on that link to configure `kubectl` to access you GKE cluster, use the correct *namespace* for this deployment and create the TLS certificates used below.
 
-The steps used to connect the `squash-restful-api` app running on GKE with the Google Cloud SQL instance are documented `here <https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine>`_. The Service account private key created at this step, referred below as `PROXY_KEY_FILE_PATH`, is stored in SQuaRE 1Password account and identified as *SQuaSH Cloud SQL service account key*.
 
-See also `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ on how to configure `kubectl` to access you GKE cluster, use the correct *namespace* for this deployment and create the TLS secret used below.
+The `squash-restful-api` requires a MySQL 5.7 instance on Google Cloud SQL. We assume such instance exists in the `sqre` project and that you have created a service account private key as described `here <https://cloud.google.com/sql/docs/mysql/connect-kubernetes-engine>`_.
+
+NOTE: The Service account private key created at this step is referred below as `PROXY_KEY_FILE_PATH`, and is stored in SQuaRE 1Password account identified as *SQuaSH Cloud SQL service account key*.
 
 
 Kubernetes deployment
 ---------------------
 
 
-For a `demo` deployment you should follow the instructions at `squash-deployment <https://github.com/lsst-sqre/squash-deployment>`_ repository and run the commands below *before* deploying the SQuaSH RESTful API:
-
-Assuming you have `kubectl` configured to access your GKE cluster:
+Assuming all the requirements above are satisfied and that you are using the namespace `demo`:
 
 .. code-block::
 
- git clone https://github.com/lsst-sqre/squash-deployment
- cd squash-deployment
-
- # Create the deployment namespace
- export NAMESPACE=demo
- make namespace
-
- # Create the TLS secret
- make tls-certs
-
- git clone https://github.com/lsst-sqre/squash-restful-api
  cd squash-restful-api
  
  # Create secret with the Cloud SQL Proxy key and the database password
  export PROXY_KEY_FILE_PATH=<path to the JSON file with the SQuaSH Cloud SQL service account key.>
- export SQUASH_DB_PASSWORD=<password created for the user 'proxyuser' when the Cloud SQL instance was configured.>
- 
- make cloudsql-credentials
+ export SQUASH_DB_PASSWORD=<password created for the user `proxyuser` when the Cloud SQL instance was configured.>
+ make cloudsql-secret
+
+ # Name of the Cloud SQL instance to use
+ export INSTANCE_CONNECTION_NAME=<name of the cloudsql instance>
 
  # Create secret with AWS credentials
  export AWS_ACCESS_KEY_ID=<the aws access key id>
  export AWS_SECRET_ACCESS_KEY=<the aws secret access key>
-
  make aws-secret
   
  # Set the application default user
@@ -58,8 +48,11 @@ Assuming you have `kubectl` configured to access your GKE cluster:
 
  # Create the service name
  cd ..
+
  export SQUASH_SERVICE=squash-restful-api
  make name
+
+The SQuaSH RESTful API should be available through the URL created in the previous step.
 
 
 Debug
@@ -87,6 +80,17 @@ You can open a terminal inside the `api` container with:
 
  kubectl exec -it <TAB> -c api /bin/bash
 
+and connect to the database with  `mysql -h 127.0.0.1 -u proxyuser -p`.
+
+NOTE: Due to initialization of the containers it might happen that the `api` container tries
+to connect to the Cloud SQL instance before the `cloudsql-proxy` container is initialized, one
+way to fix that is to restart only the `api` container in the pod.
+
+The following kill all processes, and the `api` container will restart.
+
+.. code-block::
+
+ kubectl exec <squash-restful-api pod> -c api /sbin/killall5
 
 Development workflow
 --------------------

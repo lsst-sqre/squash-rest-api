@@ -20,7 +20,8 @@ help:
 	@echo "  redis			run redis container for development"
 	@echo "  celery			start celery worker in development mode"
 	@echo "  run			run tests and run the app in development mode"
-	@echo "  cloudsql-credentials  create secrets with cloud sql proxy key and db password"
+	@echo "  cloudsql-secret create secrets with cloud sql proxy key and db password"
+	@echo "  aws-secret     create secret with aws credentials"
 	@echo "  build          build squash-restful-api and nginx docker images"
 	@echo "  push           push docker images to docker hub"
 	@echo "  configmap      create configmap for customized nginx configuration"
@@ -56,7 +57,7 @@ celery: check-aws-credentials
 run: test
 	flask run
 
-cloudsql-credentials: check-cloudsql-credentials
+cloudsql-secret: check-cloudsql-credentials
 	kubectl delete --ignore-not-found=true secrets cloudsql-instance-credentials
 	kubectl create secret generic cloudsql-instance-credentials --from-file=credentials.json=${PROXY_KEY_FILE_PATH}
 	kubectl delete --ignore-not-found=true secrets cloudsql-db-credentials
