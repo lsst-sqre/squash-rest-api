@@ -32,8 +32,11 @@ NAMESPACE=$(kubectl config current-context)
 
 SQUASH_API_HOST="squash-restful-api-${NAMESPACE}.lsst.codes"
 
+SQUASH_S3_BUCKET="squash-${NAMESPACE}.data"
+
 if [ "$NAMESPACE" == "squash-prod" ]; then
     SQUASH_API_HOST="squash-restful-api.lsst.codes"
+    SQUASH_S3_BUCKET="squash.data"
 fi
 
 if [ "$SQUASH_DEFAULT_USER" == "" ]; then
@@ -54,6 +57,7 @@ fi
 sed -e "
 s/{{ TAG }}/${TAG}/
 s/{{ SQUASH_API_HOST }}/${SQUASH_API_HOST}/
+s/{{ SQUASH_S3_BUCKET }}/${SQUASH_S3_BUCKET}/
 s/{{ SQUASH_DEFAULT_USER }}/${SQUASH_DEFAULT_USER}/
 s/{{ SQUASH_DEFAULT_PASSWORD }}/${SQUASH_DEFAULT_PASSWORD}/
 s/{{ SQUASH_ETL_MODE }}/\'${SQUASH_ETL_MODE}\'/

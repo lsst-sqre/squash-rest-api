@@ -22,6 +22,7 @@ help:
 	@echo "  run			run tests and run the app in development mode"
 	@echo "  cloudsql-secret create secrets with cloud sql proxy key and db password"
 	@echo "  aws-secret     create secret with aws credentials"
+	@echo "  s3-bucket      create the S3 Bucket for this deployment"
 	@echo "  build          build squash-restful-api and nginx docker images"
 	@echo "  push           push docker images to docker hub"
 	@echo "  configmap      create configmap for customized nginx configuration"
@@ -50,6 +51,9 @@ createdb: check-squash-db-credentials
 
 redis:
 	docker run --rm --name redis -p 6379:6379 redis
+
+s3-bucket: check-aws-credentials check-namespace
+	aws s3api create-bucket --bucket squash-${NAMESPACE}.data --region us-east-1
 
 celery: check-aws-credentials
 	celery -A app.tasks -E -l DEBUG worker
@@ -116,3 +120,9 @@ check-aws-credentials:
     then echo "Error: AWS_SECRET_ACCESS_KEY is undefined."; \
        exit 1; \
     fi
+
+check-namespace:
+	@if [ -z ${NAMESPACE} ]; \
+	then echo "Error: NAMESPACE is undefined."; \
+	     exit 1; \
+	fi

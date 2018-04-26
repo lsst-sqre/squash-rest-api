@@ -55,7 +55,7 @@ spec:
           - name: CELERY_BROKER_URL
             value: 'redis://localhost:6379'
           - name: S3_BUCKET
-            value: 'squash.data'
+            value: {{ SQUASH_S3_BUCKET }}
           - name: AWS_ACCESS_KEY_ID
             valueFrom:
               secretKeyRef:
@@ -97,7 +97,7 @@ spec:
           - name: CELERY_BROKER_URL
             value: 'redis://localhost:6379'
           - name: S3_BUCKET
-            value: 'squash.data'
+            value: {{ SQUASH_S3_BUCKET }}
           - name: AWS_ACCESS_KEY_ID
             valueFrom:
               secretKeyRef:
