@@ -16,6 +16,7 @@ from .api_v1.blob import Blob
 from .api_v1.status import Status
 from .api_v1.jenkins import Jenkins
 from .api_v1.version import Version
+from .api_v1.stats import Stats
 from .api_v1.monitor import Monitor
 from .api_v1.dataset import DatasetList
 from .api_v1.package import PackageList
@@ -107,5 +108,6 @@ def create_app(profile):
 
     # Miscellaneous
     api.add_resource(Version, '/version', endpoint='version')
+    api.add_resource(Stats, '/stats', endpoint='stats')
 
     return app
