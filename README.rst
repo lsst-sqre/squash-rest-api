@@ -39,6 +39,9 @@ Assuming all the requirements above are satisfied and that you are using the nam
  export AWS_ACCESS_KEY_ID=<the aws access key id>
  export AWS_SECRET_ACCESS_KEY=<the aws secret access key>
  make aws-secret
+
+ # Create the S3 bucket for this deployment
+ make s3-bucket
   
  # Set the application default user
  export SQUASH_DEFAULT_USER=<the squash api admin user>
@@ -131,6 +134,12 @@ Development workflow
  coverage run --source=app test.py
 
 4. Run the app locally:
+
+Note that by default the app will run using the development config profile, which is equivalent to do:
+
+.. code-block::
+
+ export SQUASH_API_PROFILE=app.config.Development
 
 .. code-block::
 

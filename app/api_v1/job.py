@@ -192,9 +192,18 @@ class Job(Resource):
             else:
                 raise ApiError("Missing `env_name` in env metadata.", 400)
         else:
-            raise ApiError("Missing env metadata.", 400)
+            # allows for unknown environment
+            e = EnvModel.find_by_name('unknown')
+            if not e:
+                e = EnvModel('unknown')
+                try:
+                    e.save_to_db()
+                except Exception:
+                    raise ApiError("An error ocurred creating "
+                                   "the env object.", 500)
 
         return e.id
+
 
     def create_job(self, env_id):
         """ Creates the job object
@@ -215,7 +224,10 @@ class Job(Resource):
         meta = self.data['meta'].copy()
 
         # we extract the env metadata
-        env = meta.pop('env')
+        if 'env' in meta:
+            env = meta.pop('env')
+        else:
+            env = {}
 
         # and remove the packages, they will be inserted later.
         if 'packages' in meta:

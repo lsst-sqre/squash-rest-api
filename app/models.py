@@ -253,9 +253,10 @@ class JobModel(db.Model):
             self.ci_dataset = env['ci_dataset']
         # Preserve date from the env metadata if SQUASH is running
         # in ETL mode
-        if SQUASH_ETL_MODE:
+        if SQUASH_ETL_MODE and 'date' in env:
             self.date_created = datetime.strptime(env['date'],
                                                   "%Y-%m-%dT%H:%M:%SZ")
+
         self.env = env
         self.meta = meta
 
