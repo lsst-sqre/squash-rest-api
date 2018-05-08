@@ -74,6 +74,7 @@ class Monitor(Resource):
                                     Job.date_created,
                                     Job.env['ci_id'],
                                     Job.env['ci_url'],
+                                    Job.meta['filter_name'],
                                     Job.id
                                     )
 
@@ -82,10 +83,11 @@ class Monitor(Resource):
         date_created_list = []
         ci_id_list = []
         ci_url_list = []
+        job_filter_name_list = []
         job_id_list = []
 
         for value, metric_name,  date_created, ci_id, ci_url, \
-                job_id in generator:
+                job_filter_name, job_id in generator:
 
             value_list.append(value)
             metric_name_list.append(metric_name)
@@ -93,6 +95,7 @@ class Monitor(Resource):
                                      strftime("%Y-%m-%dT%H:%M:%SZ"))
             ci_id_list.append(ci_id)
             ci_url_list.append(ci_url)
+            job_filter_name_list.append(job_filter_name)
             job_id_list.append(job_id)
 
         return {'value': value_list,
@@ -100,4 +103,5 @@ class Monitor(Resource):
                 'metric_name': metric_name_list,
                 'ci_id': ci_id_list,
                 'ci_url': ci_url_list,
+                'filter_name': job_filter_name_list,
                 'job_id': job_id_list}
