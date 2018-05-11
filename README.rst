@@ -140,6 +140,7 @@ Note that by default the app will run using the development config profile, whic
 .. code-block::
 
  export SQUASH_API_PROFILE=app.config.Development
+ export SQUASH_DB_PASSWORD=<password used to create the mysql db in the step 2>
 
 .. code-block::
 
