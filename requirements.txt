@@ -10,3 +10,4 @@ uWSGI
 click
 boto3
 celery[redis]
+autopep8
