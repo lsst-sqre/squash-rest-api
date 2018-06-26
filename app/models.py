@@ -1,8 +1,7 @@
 import os
 import numpy as np
 from datetime import datetime
-from werkzeug.security import generate_password_hash,\
-     check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Implements JSON data type in MySQL 5.7 see
 # https://jira.lsstcorp.org/browse/DM-12191
@@ -228,6 +227,7 @@ class JobModel(db.Model):
     env_id = db.Column(db.Integer, db.ForeignKey('env.id'))
     # Name of the dataset used in this job, extrated from the
     # environment
+    # FIXME: DM-14538 Remove ci_dataset from job model
     ci_dataset = db.Column(db.String(32), default=None)
     # Timestamp when the actual job object was created
     date_created = db.Column(db.TIMESTAMP, nullable=False,
@@ -249,8 +249,11 @@ class JobModel(db.Model):
     def __init__(self, env_id, env, meta):
 
         self.env_id = env_id
+        # FIXME: DM-14538 Remove ci_dataset from job model
         if 'ci_dataset' in env:
             self.ci_dataset = env['ci_dataset']
+        elif 'dataset' in env:
+            self.ci_dataset = env['dataset']
         # Preserve date from the env metadata if SQUASH is running
         # in ETL mode
         if SQUASH_ETL_MODE and 'date' in env:
