@@ -26,7 +26,7 @@ Assuming all the requirements above are satisfied and that you are using the nam
 .. code-block::
 
  cd squash-restful-api
- 
+
  # Create secret with the Cloud SQL Proxy key and the database password
  export PROXY_KEY_FILE_PATH=<path to the JSON file with the SQuaSH Cloud SQL service account key.>
  export SQUASH_DB_PASSWORD=<password created for the user `proxyuser` when the Cloud SQL instance was configured.>
@@ -42,11 +42,11 @@ Assuming all the requirements above are satisfied and that you are using the nam
 
  # Create the S3 bucket for this deployment
  make s3-bucket
-  
+
  # Set the application default user
  export SQUASH_DEFAULT_USER=<the squash api admin user>
  export SQUASH_DEFAULT_PASSWORD=<password for the squash api admin user>
- 
+
  TAG=latest make service deployment
 
  # Create the service name
@@ -76,7 +76,7 @@ and the container logs using:
  kubectl logs deployment/squash-restful-api worker
  kubectl logs deployment/squash-restful-api redis
  kubectl logs deployment/squash-restful-api cloudsql-proxy
- 
+
 You can open a terminal inside the `api` container with:
 
 .. code-block::
@@ -103,8 +103,8 @@ Development workflow
 
 .. code-block::
 
- git clone  https://github.com/lsst-sqre/squash-rest-api.git
- cd squash-rest-api
+ git clone  https://github.com/lsst-sqre/squash-restful-api.git
+ cd squash-restful-api
 
  virtualenv env -p python3
 
@@ -119,6 +119,7 @@ Development workflow
 
 .. code-block::
 
+ export SQUASH_DB_PASSWORD=<squash db mysql password>
  make mysql
  make dropdb  # if there's a previous db in there
  make createdb
@@ -140,10 +141,6 @@ Note that by default the app will run using the development config profile, whic
 .. code-block::
 
  export SQUASH_API_PROFILE=app.config.Development
- export SQUASH_DB_PASSWORD=<password used to create the mysql db in the step 2>
-
-.. code-block::
-
  flask run
 
 or check the available commands with
@@ -155,4 +152,3 @@ or check the available commands with
 The app will run at http://localhost:5000
 
 5. Exercise the API running the `test API notebook <https://github.com/lsst-sqre/squash-rest-api/blob/master/tests/test_api.ipynb>`_.
-
