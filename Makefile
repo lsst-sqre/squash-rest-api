@@ -2,7 +2,6 @@ PATH:=bin/:${PATH}
 .PHONY: clean test mysql redis celery run mysql-secret build push configmap deployment\
 service check-tag check-cloudsql-credentials check-squash-db-password
 
-MYSQL_PASSWD = passwd.txt
 API = lsstsqre/squash-restful-api
 NGINX = lsstsqre/squash-restful-api-nginx
 NGINX_CONFIG = kubernetes/nginx/nginx.conf
@@ -16,7 +15,8 @@ help:
 	@echo "  clean			remove temp files"
 	@echo "  test			run tests and generate test coverage"
 	@echo "  mysql  		start mysql for development"
-	@echo "  db       		(re)create dev and test databases"
+	@echo "  dropdb       		drop dev and test databases"
+	@echo "  createdb       	create dev and test databases"
 	@echo "  redis			run redis container for development"
 	@echo "  celery			start celery worker in development mode"
 	@echo "  run			run tests and run the app in development mode"
@@ -42,12 +42,12 @@ mysql: check-squash-db-credentials
 	docker run --rm --name mysql -e MYSQL_ROOT_PASSWORD=${SQUASH_DB_PASSWORD} -p 3306:3306 -d mysql:5.7
 
 dropdb: check-squash-db-credentials
-	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'DROP DATABASE squash_dev'"
-	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'DROP DATABASE squash_test'"
+	docker exec mysql sh -c "MYSQL_PWD=${SQUASH_DB_PASSWORD} mysql -e 'DROP DATABASE squash_dev'"
+	docker exec mysql sh -c "MYSQL_PWD=${SQUASH_DB_PASSWORD} mysql -e 'DROP DATABASE squash_test'"
 
 createdb: check-squash-db-credentials
-	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'CREATE DATABASE squash_dev'"
-	docker exec mysql sh -c "mysql -p${SQUASH_DB_PASSWORD} -e 'CREATE DATABASE squash_test'"
+	docker exec mysql sh -c "MYSQL_PWD=${SQUASH_DB_PASSWORD} mysql -e 'CREATE DATABASE squash_dev'"
+	docker exec mysql sh -c "MYSQL_PWD=${SQUASH_DB_PASSWORD} mysql -e 'CREATE DATABASE squash_test'"
 
 redis:
 	docker run --rm --name redis -p 6379:6379 redis
