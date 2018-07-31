@@ -21,7 +21,7 @@ from .api_v1.monitor import Monitor
 from .api_v1.dataset import DatasetList
 from .api_v1.package import PackageList
 from .api_v1.code_changes import CodeChanges
-
+from .api_v1.kpms import Kpms
 
 def create_app(profile):
     """Create an instance of the flask app.
@@ -105,6 +105,7 @@ def create_app(profile):
     api.add_resource(DatasetList, '/datasets', endpoint='datasets')
     api.add_resource(PackageList, '/packages', endpoint='packages')
     api.add_resource(CodeChanges, '/code_changes', endpoint='code_changes')
+    api.add_resource(Kpms, '/kpms', endpoint='kpms')
 
     # Miscellaneous
     api.add_resource(Version, '/version', endpoint='version')

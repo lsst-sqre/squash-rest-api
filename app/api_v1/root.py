@@ -13,7 +13,7 @@ class Root(Resource):
         # List of resources we want in the API root
         endpoints = ['job', 'blob', 'metrics', 'specs', 'apidocs', 'users',
                      'register', 'version', 'auth', 'monitor', 'datasets',
-                     'stats', 'packages', 'code_changes']
+                     'stats', 'packages', 'code_changes', 'kpms']
 
         root_url = url_for('root', _external=True)
 
