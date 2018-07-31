@@ -86,7 +86,7 @@ class Monitor(Resource):
         job_filter_name_list = []
         job_id_list = []
 
-        for value, metric_name,  date_created, ci_id, ci_url, \
+        for value, metric_name, date_created, ci_id, ci_url, \
                 job_filter_name, job_id in generator:
 
             value_list.append(value)
