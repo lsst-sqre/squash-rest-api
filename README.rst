@@ -126,7 +126,7 @@ Development workflow
  <new terminal session>
  make redis
  <new terminal session>
- make celery
+ make celery # the celery task `app.tasks.s3.upload_object` requires AWS creds for upload, it uses the `s3://squash-dev.data/` S3 bucket by default and assume it was previously created.
 
 3. Run tests
 
