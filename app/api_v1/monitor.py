@@ -10,6 +10,7 @@ from ..models import MetricModel as Metric
 class Monitor(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('ci_dataset')
+    parser.add_argument('filter_name')
     parser.add_argument('metric')
     parser.add_argument('period')
 
@@ -25,6 +26,12 @@ class Monitor(Resource):
           type: string
           description: >
             Name of the data set used in this job, e.g: cfht, decam, hsc
+        - name: filter_name
+          in: url
+          type: string
+          description: >
+            Name of the filter associated to a given dataset, e.g 'r'
+            for cfht
         - name: period
           in: url
           type: string
@@ -44,6 +51,10 @@ class Monitor(Resource):
         ci_dataset = args['ci_dataset']
         if ci_dataset:
             queryset = queryset.filter(Job.ci_dataset == ci_dataset)
+
+        filter_name = args['filter_name']
+        if filter_name:
+            queryset = queryset.filter(Job.meta['filter_name'] == filter_name)
 
         metric = args['metric']
         if metric:
