@@ -11,6 +11,7 @@ from ..models import PackageModel as Package
 class CodeChanges(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('ci_dataset')
+    parser.add_argument('filter_name')
     parser.add_argument('period')
 
     def pairwise(self, iterable):
@@ -84,24 +85,45 @@ class CodeChanges(Resource):
         ---
         tags:
           - Apps
+        parameters:
+        - name: ci_dataset
+          in: url
+          type: string
+          description: >
+            Name of the data set used in this job, e.g: cfht, decam, hsc
+        - name: filter_name
+          in: url
+          type: string
+          description: >
+            Name of the filter associated to a given dataset, e.g 'r'
+            for cfht
+        - name: period
+          in: url
+          type: string
+          description: >
+             The period used to retrieve the data, e.g: "Last Month",
+             "Last 6 Months", "Last Year" or "All". By default retrieves
+             the last month of data.
         responses:
           200:
             description: List of packages successfully retrieved.
         """
-
         # join job and packages and get ci_id, packages name, git_commit
         # and git_url sorted by date
 
         queryset = Job.query.join(Package)
 
         args = self.parser.parse_args()
-        ci_dataset = args['ci_dataset']
 
+        ci_dataset = args['ci_dataset']
         if ci_dataset:
             queryset = queryset.filter(Job.ci_dataset == ci_dataset)
 
-        period = args['period']
+        filter_name = args['filter_name']
+        if filter_name:
+            queryset = queryset.filter(Job.meta['filter_name'] == filter_name)
 
+        period = args['period']
         if period:
             end = datetime.datetime.today()
 
