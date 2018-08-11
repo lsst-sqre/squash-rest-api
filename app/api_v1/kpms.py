@@ -27,8 +27,7 @@ class Kpms(Resource):
         - name: job_id
           in: url
           type: string
-          description: >
-            Job ID for which the KPMs will be retrieved.
+          description: Job ID for which the KPMs will be retrieved.
         - name: package
           in: url
           type: string
@@ -54,14 +53,12 @@ class Kpms(Resource):
         - name: metric_tag
           in: url
           type: string
-          description: >
-             Tag used to filter metrics.
+          description: Tag used to filter metrics.
         - name: specification_tag
           in: url
           type: string
-          description: >
-             Tag used to filter specifications.
-        - responses:
+          description: Tag used to filter specifications.
+        responses:
           200:
             description: KPMs data successfully retrieved.
         """
