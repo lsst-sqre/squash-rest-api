@@ -114,11 +114,73 @@ class Metric(Resource):
 
         try:
             metric.save_to_db()
-        except:
+        except Exception:
             message = "An error ocurred creating metric `{}`.".format(name)
             return {"message": message}, 500
 
         return metric.json(), 201
+
+    @jwt_required()
+    def put(self, name):
+        """
+        Update a metric definition.
+        ---
+        tags:
+          - Metrics
+        parameters:
+        - name: name
+          in: path
+          type: string
+          description: Full qualified name of the metric, e.g. validate_drp.AM1
+          required: true
+        - in: body
+          name: "Request body:"
+          schema:
+            type: object
+            required:
+              - description
+            properties:
+              description:
+                type: string
+              unit:
+                type: string
+              tags:
+                type: array
+              reference:
+                type: object
+        responses:
+          200:
+            description: Metric successfully updated.
+          404:
+            description: Metric not found.
+          401:
+            description: >
+                Authorization Required. Request does not contain a
+                valid access token.
+          500:
+            description: An error occurred updating this metric.
+        """
+
+        data = Metric.parser.parse_args()
+
+        metric = MetricModel.find_by_name(name)
+
+        if not metric:
+            message = "Metric `{}` not found.".format(name)
+            return {'message': message}, 404
+
+        metric.description = data['description']
+        metric.unit = data['unit']
+        metric.tags = data['tags']
+        metric.reference = data['reference']
+
+        try:
+            metric.save_to_db()
+        except Exception:
+            message = "An error ocurred updating metric `{}`.".format(name)
+            return {"message": message}, 500
+
+        return metric.json(), 200
 
     @jwt_required()
     def delete(self, name):

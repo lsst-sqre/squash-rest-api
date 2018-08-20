@@ -116,14 +116,70 @@ class Specification(Resource):
 
         try:
             spec.save_to_db()
-        except:
-
-            message = "An error ocurred creating this metric " \
-                      "specification".format(name)
-
+        except Exception:
+            message = "An error ocurred creating `{}`".format(name)
             return {"message": message}, 500
 
         return spec.json(), 201
+
+    @jwt_required()
+    def put(self, name):
+        """
+        Update a metric specification.
+        ---
+        tags:
+          - Metric Specifications
+        parameters:
+        - name: name
+          in: path
+          type: string
+          description: >
+            Full qualified name of the metric specification, e.g.
+            validate_drp.AM1.mininum_gri
+          required: true
+        - in: body
+          name: "Request body:"
+          schema:
+            type: object
+            properties:
+              threshold:
+                type: object
+              tags:
+                type: array
+              metadata_query:
+                type: object
+        responses:
+          200:
+            description: Metric specification successfully updated.
+          404:
+            description: Specification not found.
+          401:
+            description: >
+                Authorization Required. Request does not contain a
+                valid access token.
+          500:
+            description: An error occurred updating this specification.
+        """
+
+        data = Specification.parser.parse_args()
+
+        spec = SpecificationModel.find_by_name(name)
+
+        if not spec:
+            message = "Specification `{}` not found.".format(name)
+            return {'message': message}, 404
+
+        spec.threshold = data['threshold']
+        spec.tags = data['tags']
+        spec.metadata_query = data['metadata_query']
+
+        try:
+            spec.save_to_db()
+        except Exception:
+            message = "An error ocurred updating `{}`".format(name)
+            return {"message": message}, 500
+
+        return spec.json(), 200
 
     @jwt_required()
     def delete(self, name):
@@ -153,8 +209,7 @@ class Specification(Resource):
         spec = SpecificationModel.find_by_name(name)
 
         if not spec:
-            message = "The metric specification `{}` not " \
-                      "found.".format(name)
+            message = "Specification `{}` not found.".format(name)
             return {"message": message}, 404
 
         spec.delete_from_db()
@@ -266,7 +321,7 @@ class SpecificationList(Resource):
 
             try:
                 spec.save_to_db()
-            except:
+            except Exception:
 
                 message = "An error ocurred creating this metric " \
                           "specification".format(name)
