@@ -1,5 +1,6 @@
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
+from sqlalchemy import func
 
 from ..models import SpecificationModel, MetricModel
 
@@ -223,6 +224,9 @@ class SpecificationList(Resource):
                         action="append"
                         )
     parser.add_argument('metric')
+    parser.add_argument('dataset_name')
+    parser.add_argument('filter_name')
+    parser.add_argument('tag')
 
     def get(self):
         """
@@ -237,19 +241,52 @@ class SpecificationList(Resource):
             description: >
                 A full qualified name for the Metric,
                 e.g `validate_drp.AM1`
-        responses:
+          - name: dataset_name
+            in: url
+            type: string
+            description: >
+                Name of the dataset as in the query metadata,
+                e.g `validation_data_cfht`
+          - name: filter_name
+            in: url
+            type: string
+            description: >
+                Name of the filter as in the query metadada,
+                e.g. `r`
+          - name: specification_tag
+            in: url
+            type: string
+            description: >
+                Name of the specification tag
+            responses:
           200:
             description: List of metric specifications successfully retrieved.
         """
 
         queryset = SpecificationModel.query.join(MetricModel)
-
         args = self.parser.parse_args()
 
         metric = args['metric']
-
         if metric:
             queryset = queryset.filter(MetricModel.name == metric)
+
+        dataset_name = args['dataset_name']
+        if dataset_name:
+            expr = SpecificationModel.metadata_query['dataset_name'] \
+                == dataset_name
+            queryset = queryset.filter(expr)
+
+        filter_name = args['filter_name']
+        if filter_name:
+            expr = SpecificationModel.metadata_query['filter_name'] \
+                == filter_name
+            queryset = queryset.filter(expr)
+
+        specification_tag = args['tag']
+        if specification_tag:
+            expr = func.json_contains(SpecificationModel.tags,
+                                      '"{}"'.format(specification_tag))
+            queryset = queryset.filter(expr)
 
         return {'specs': [spec.json() for spec
                           in queryset.all()]}
