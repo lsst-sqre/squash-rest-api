@@ -258,7 +258,7 @@ class SpecificationList(Resource):
             type: string
             description: >
                 Name of the specification tag
-            responses:
+        responses:
           200:
             description: List of metric specifications successfully retrieved.
         """
