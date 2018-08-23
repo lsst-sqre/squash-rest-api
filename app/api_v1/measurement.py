@@ -118,7 +118,7 @@ class Measurement(Resource):
 
         try:
             measurement.save_to_db()
-        except:
+        except Exception:
             return {"message": "An error occurred inserting the "
                                "measurement."}, 500
 
