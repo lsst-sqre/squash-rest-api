@@ -105,7 +105,7 @@ class TestAPI(unittest.TestCase):
 
         # add a job
         r, json = self.client.post('/job', data=data)
-        self.assertTrue(r.status_code == 201)
+        self.assertTrue(r.status_code == 202)
 
         # delete a job
         r, json = self.client.delete('/job/1')
@@ -137,7 +137,7 @@ class TestAPI(unittest.TestCase):
 
         # add a job
         r, json = self.client.post('/job', data=data)
-        self.assertTrue(r.status_code == 201)
+        self.assertTrue(r.status_code == 202)
 
         # add measurement
         data = {'value': 1.0, 'metric': 'demo.m1', 'unit': 'unknown'}
