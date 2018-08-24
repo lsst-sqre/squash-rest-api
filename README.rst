@@ -1,9 +1,11 @@
-
 ##################
 SQuaSH RESTful API
 ##################
 
 The SQuaSH RESTful API is a web app implemented in Flask for managing the SQuaSH metrics dashboard. You can learn more about SQuaSH at `SQR-009 <https://sqr-009.lsst.io>`_.
+
+.. image:: https://travis-ci.org/lsst-sqre/squash-restful-api.svg?branch=master
+    :target: https://travis-ci.org/lsst-sqre/squash-restful-api
 
 Requirements
 ============
