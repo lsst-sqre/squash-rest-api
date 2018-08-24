@@ -1,4 +1,3 @@
-import datetime
 from flask_restful import Resource, reqparse
 from sqlalchemy import func
 
@@ -139,8 +138,9 @@ class Kpms(Resource):
         job_id_list = []
 
         for value, metric_name, metric_display_name, metric_tags, spec_name,\
-            spec_tags, spec_threshold, spec_metadata_query, job_date_created,\
-            job_dataset_name, job_filter_name, job_id in generator:
+                spec_tags, spec_threshold, spec_metadata_query,\
+                job_date_created, job_dataset_name, job_filter_name,\
+                job_id in generator:
 
             value_list.append(value)
             metric_name_list.append(metric_name)

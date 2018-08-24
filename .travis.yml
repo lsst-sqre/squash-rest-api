@@ -1,15 +1,28 @@
-sudo: false
+sudo: true
 language: python
 matrix:
   include:
     - python: '3.6'
 services:
   - mysql
+  - redis-server
 install:
+  - pip install flake8
   - pip install -r requirements.txt
+addons:
+  apt:
+    sources:
+      - mysql-5.7-trusty
+    packages:
+      - mysql-server
+      - mysql-client
+before_install:
+  - sudo mysql -e "use mysql; update user set authentication_string=PASSWORD('squash') where User='root'; update user set plugin='mysql_native_password';FLUSH PRIVILEGES;"
+  - sudo mysql_upgrade --user=root --password=squash
+  - sudo service mysql restart
+  - mysql --user=root --password=squash -e 'CREATE DATABASE squash_test;'
 script:
   - flake8 app tests
   - coverage run --source=app test.py
 after_sucess:
   - coveralls
-

@@ -204,7 +204,6 @@ class Job(Resource):
 
         return e.id
 
-
     def create_job(self, env_id):
         """ Creates the job object
 

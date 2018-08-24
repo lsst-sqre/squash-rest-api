@@ -5,7 +5,7 @@ from datetime import timedelta
 # Set locally for development or obtained from Cloud SQL credentials
 # in production (kubernetes deployment)
 SQUASH_DB_USER = os.environ.get('SQUASH_DB_USER', 'root')
-SQUASH_DB_PASSWORD = os.environ.get('SQUASH_DB_PASSWORD')
+SQUASH_DB_PASSWORD = os.environ.get('SQUASH_DB_PASSWORD', 'squash')
 
 
 class Config(object):
@@ -79,4 +79,4 @@ class Testing(Config):
     SQLALCHEMY_DATABASE_URI = "mysql+pymysql://{}:{}@127.0.0.1/squash_test". \
         format(SQUASH_DB_USER, SQUASH_DB_PASSWORD)
 
-    SQLALCHEMY_ECHO = False
+    SQLALCHEMY_ECHO = True
