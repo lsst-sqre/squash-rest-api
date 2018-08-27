@@ -2,8 +2,8 @@ PATH:=bin/:${PATH}
 .PHONY: clean test mysql redis celery run mysql-secret build push configmap deployment\
 service check-tag check-cloudsql-credentials check-squash-db-password
 
-API = lsstsqre/squash-restful-api
-NGINX = lsstsqre/squash-restful-api-nginx
+API_IMAGE = lsstsqre/squash-restful-api
+NGINX_IMAGE = lsstsqre/squash-restful-api-nginx
 NGINX_CONFIG = kubernetes/nginx/nginx.conf
 DEPLOYMENT_TEMPLATE = kubernetes/deployment-template.yaml
 DEPLOYMENT_CONFIG = kubernetes/deployment.yaml
@@ -67,13 +67,21 @@ cloudsql-secret: check-cloudsql-credentials
 	kubectl delete --ignore-not-found=true secrets cloudsql-db-credentials
 	kubectl create secret generic cloudsql-db-credentials --from-literal=username=proxyuser --from-literal=password=${SQUASH_DB_PASSWORD}
 
+travis-build:
+	docker build -t $(API_IMAGE):build .
+	docker build -t $(NGINX_IMAGE):build kubernetes/nginx
+
+travis-docker-deploy:
+	./bin/travis-docker-deploy.sh $(API_IMAGE) build
+	./bin/travis-docker-deploy.sh $(NGINX_IMAGE) build
+
 build: check-tag
-	docker build -t $(API):${TAG} .
-	docker build -t $(NGINX):${TAG} kubernetes/nginx
+	docker build -t $(API_IMAGE):${TAG} .
+	docker build -t $(NGINX_IMAGE):${TAG} kubernetes/nginx
 
 push: check-tag
-	docker push $(API):${TAG}
-	docker push $(NGINX):${TAG}
+	docker push $(API_IMAGE):${TAG}
+	docker push $(NGINX_IMAGE):${TAG}
 
 configmap:
 	@echo "Creating config map for nginx configuration..."
