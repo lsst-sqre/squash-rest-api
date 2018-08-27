@@ -3,7 +3,7 @@ language: python
 matrix:
   include:
     - python: '3.6'
-    - env: DEPLOY_DOCKER_IMAGE=true
+      env: DEPLOY_DOCKER_IMAGE=true
 services:
   - mysql
   - redis-server
