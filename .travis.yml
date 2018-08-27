@@ -27,8 +27,7 @@ script:
   - flake8 app tests
   - coverage run --source=app test.py
   - make travis-build
-after_sucess:
-  - coveralls
+after_success:
   - make travis-docker-deploy
 env:
   global:
