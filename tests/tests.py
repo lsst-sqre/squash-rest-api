@@ -158,3 +158,8 @@ class TestAPI(unittest.TestCase):
         # get measurements from a job that does not exist
         r, json = self.client.get('/measurement/2')
         self.assertTrue(r.status_code == 404)
+
+    def test_apidocs(self):
+
+        r, json = self.client.get('/apispec_1.json')
+        self.assertTrue(r.status_code == 200)
