@@ -2,7 +2,6 @@ flask-restful
 flask-jwt
 flask-sqlalchemy
 pymysql
-coveralls
 flasgger
 numpy
 mysqlclient

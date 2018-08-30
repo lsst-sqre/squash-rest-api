@@ -79,4 +79,4 @@ class Testing(Config):
     SQLALCHEMY_DATABASE_URI = "mysql+pymysql://{}:{}@127.0.0.1/squash_test". \
         format(SQUASH_DB_USER, SQUASH_DB_PASSWORD)
 
-    SQLALCHEMY_ECHO = True
+    SQLALCHEMY_ECHO = False

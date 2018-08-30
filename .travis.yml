@@ -24,8 +24,7 @@ before_install:
   - sudo service mysql restart
   - mysql --user=root --password=squash -e 'CREATE DATABASE squash_test;'
 script:
-  - flake8 app tests
-  - coverage run --source=app test.py
+  - make test
   - make travis-build
 after_success:
   - make travis-docker-deploy
