@@ -361,3 +361,20 @@ class Job(Resource):
                     except Exception:
                         raise ApiError("An error ocurred registering "
                                        "the S3 URI location.", 500)
+
+class JobList(Resource):
+
+    def get(self):
+        """
+        Retrieve the complete list of job ids.
+        ---
+        tags:
+          - Jobs
+        responses:
+          200:
+            description: List of job ids successfully retrieved.
+        """
+
+        queryset = JobModel.query
+
+        return {'ids': [job.id for job in queryset.all()]}
