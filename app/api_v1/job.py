@@ -362,6 +362,7 @@ class Job(Resource):
                         raise ApiError("An error ocurred registering "
                                        "the S3 URI location.", 500)
 
+
 class JobList(Resource):
 
     def get(self):

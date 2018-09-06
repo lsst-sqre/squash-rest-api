@@ -272,6 +272,7 @@ class JobModel(db.Model):
         return {'id': self.id,
                 'date_created':
                     self.date_created.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                'ci_dataset': self.ci_dataset,
                 's3_uri': self.s3_uri,
                 'measurements': [meas.json() for meas in
                                  self.measurements],
