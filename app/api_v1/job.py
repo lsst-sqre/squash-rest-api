@@ -378,4 +378,6 @@ class JobList(Resource):
 
         queryset = JobModel.query
 
-        return {'ids': [job.id for job in queryset.all()]}
+        generator = queryset.values(JobModel.id)
+
+        return {'ids': [value[0] for value in generator]}
