@@ -95,6 +95,11 @@ aws-secret: check-aws-credentials
         --from-literal=AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
         --from-literal=AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
+honeycomb-secret: check-honey-api-key
+	@echo "Creating the Honeycomb API Key secret"
+	kubectl create secret generic honey-api-key \
+  			--from-literal=HONEY_API_KEY=${HONEY_API_KEY}
+
 deployment: check-tag check-squash-api-credentials configmap
 	@echo "Creating deployment..."
 	@$(REPLACE) $(DEPLOYMENT_TEMPLATE) $(DEPLOYMENT_CONFIG)
@@ -122,12 +127,18 @@ check-squash-db-credentials:
 check-aws-credentials:
 	@if [ -z ${AWS_ACCESS_KEY_ID} ]; \
 	then echo "Error: AWS_ACCESS_KEY_ID is undefined."; \
-       exit 1; \
-    fi
+  	exit 1; \
+  fi
 	@if [ -z ${AWS_SECRET_ACCESS_KEY} ]; \
-    then echo "Error: AWS_SECRET_ACCESS_KEY is undefined."; \
-       exit 1; \
-    fi
+  then echo "Error: AWS_SECRET_ACCESS_KEY is undefined."; \
+    exit 1; \
+  fi
+
+check-honey-api-key:
+	@if [ -z ${HONEY_API_KEY} ]; \
+	then echo "Error: HONEY_API_KEY is undefined."; \
+	     exit 1; \
+	fi
 
 check-namespace:
 	@if [ -z ${NAMESPACE} ]; \

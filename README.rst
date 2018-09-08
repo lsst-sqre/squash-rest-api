@@ -45,6 +45,9 @@ Assuming all the requirements above are satisfied and that you are using the nam
  export AWS_SECRET_ACCESS_KEY=<the aws secret access key>
  make aws-secret
 
+ export HONEY_API_KEY=<the honeycomb API write key>
+ make honeycomb-secret
+
  # Create the S3 bucket for this deployment
  make s3-bucket
 
