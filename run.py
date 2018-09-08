@@ -23,8 +23,20 @@ import click
 from app import create_app, db
 from app.models import UserModel
 
+import beeline
+from beeline.middleware.flask import HoneyMiddleware
+
+
 profile = os.environ.get('SQUASH_API_PROFILE', 'app.config.Development')
 app = create_app(profile)
+
+honey_api_key = os.environ.get('HONEY_API_KEY')
+
+beeline.init(writekey=honey_api_key, dataset="squash-rest-api",
+             service_name="squash")
+beeline.add_field('squash_api_profile', profile)
+HoneyMiddleware(app, db_events=True)
+
 
 @app.cli.command()
 def list_routes():

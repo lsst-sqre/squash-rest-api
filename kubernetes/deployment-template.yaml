@@ -66,6 +66,11 @@ spec:
               secretKeyRef:
                 name: squash-aws-creds
                 key: 'AWS_SECRET_ACCESS_KEY'
+          - name: HONEY_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: honey-api-key
+                key: 'HONEY_API_KEY'
         # Celery worker
         - name: worker
           imagePullPolicy: "Always"
@@ -148,4 +153,3 @@ spec:
         - name: ssl-certs
           hostPath:
             path: /etc/ssl/certs
-
