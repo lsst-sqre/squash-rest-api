@@ -56,6 +56,10 @@ spec:
             value: 'redis://localhost:6379'
           - name: S3_BUCKET
             value: {{ SQUASH_S3_BUCKET }}
+          - name: INFLUXDB_API_URL
+            value: {{ INFLUXDB_API_URL }}
+          - name: INFLUXDB_DATABASE
+            value: {{ INFLUXDB_DATABASE }}
           - name: AWS_ACCESS_KEY_ID
             valueFrom:
               secretKeyRef:
@@ -103,6 +107,10 @@ spec:
             value: 'redis://localhost:6379'
           - name: S3_BUCKET
             value: {{ SQUASH_S3_BUCKET }}
+          - name: INFLUXDB_API_URL
+            value: {{ INFLUXDB_API_URL }}
+          - name: INFLUXDB_DATABASE
+            value: {{ INFLUXDB_DATABASE }}
           - name: AWS_ACCESS_KEY_ID
             valueFrom:
               secretKeyRef:

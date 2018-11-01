@@ -54,6 +54,16 @@ if [ "$INSTANCE_CONNECTION_NAME" == "" ]; then
     exit 1
 fi
 
+if [ "$INFLUXDB_API_URL" == "" ]; then
+    echo "INFLUXDB_API_URL not set."
+    exit 1
+fi
+
+if [ "$INFLUXDB_DATABASE" == "" ]; then
+    echo "INFLUXDB_DATABASE not set."
+    exit 1
+fi
+
 sed -e "
 s/{{ TAG }}/${TAG}/
 s/{{ SQUASH_API_HOST }}/${SQUASH_API_HOST}/
@@ -62,5 +72,7 @@ s/{{ SQUASH_DEFAULT_USER }}/${SQUASH_DEFAULT_USER}/
 s/{{ SQUASH_DEFAULT_PASSWORD }}/${SQUASH_DEFAULT_PASSWORD}/
 s/{{ SQUASH_ETL_MODE }}/\'${SQUASH_ETL_MODE}\'/
 s/{{ INSTANCE_CONNECTION_NAME }}/${INSTANCE_CONNECTION_NAME}/
+s|{{ INFLUXDB_API_URL }}|${INFLUXDB_API_URL}|
+s/{{ INFLUXDB_DATABASE }}/${INFLUXDB_DATABASE}/
 
 " $1 > $2
