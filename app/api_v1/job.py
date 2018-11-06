@@ -1,4 +1,5 @@
 import json
+import warnings
 
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
@@ -298,9 +299,9 @@ class Job(Resource):
             if metric:
                 m = MeasurementModel(job_id, metric.id, **measurement)
             else:
-                raise ApiError("Metric `{}` not found, it looks like "
-                               "the metrics definition is out of "
-                               "date.".format(metric_name), 400)
+                warnings.warn("Metric `{}` not found, it looks like "
+                              "the metrics definition is out of "
+                              "date.".format(metric_name))
 
             # Insert data blobs associated with this measurement
             blobs = self.data['blobs']
