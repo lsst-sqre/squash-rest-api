@@ -1,4 +1,5 @@
 import json
+import warnings
 
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
@@ -6,6 +7,8 @@ from flask import current_app as app
 from flask import url_for
 
 from app.tasks.s3 import get_s3_uri, upload_object
+from app.tasks.influxdb import job_to_influxdb
+
 from app.error import ApiError
 
 from ..models import JobModel, MetricModel, MeasurementModel, PackageModel,\
@@ -154,9 +157,9 @@ class Job(Resource):
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
-        # async
+        # async task
         try:
-            self.upload_blobs()
+            self.upload_blobs_to_s3()
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
@@ -164,11 +167,19 @@ class Job(Resource):
         # async, the status of the job upload task can be accessed
         # from the /status resource
         try:
-            task = self.upload_job(job_id)
+            task = self.upload_job_to_s3(job_id)
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
+        # async task
+        try:
+            self.save_job_to_influxdb(job_id)
+        except ApiError as err:
+            app.logger.error(err.meassage)
+            return {'message': err.meassage}, err.status_code
+
+        # see DM-16391 for improving task status report
         message = "Request for creating Job `{}` received".format(job_id)
         return {'message': message, 'status': url_for('status',
                                                       task_id=task.id,
@@ -288,9 +299,9 @@ class Job(Resource):
             if metric:
                 m = MeasurementModel(job_id, metric.id, **measurement)
             else:
-                raise ApiError("Metric `{}` not found, it looks like "
-                               "the metrics definition is out of "
-                               "date.".format(metric_name), 400)
+                warnings.warn("Metric `{}` not found, it looks like "
+                              "the metrics definition is out of "
+                              "date.".format(metric_name))
 
             # Insert data blobs associated with this measurement
             blobs = self.data['blobs']
@@ -311,7 +322,7 @@ class Job(Resource):
                 raise ApiError("An error occurred inserting "
                                "measurements", 500)
 
-    def upload_job(self, job_id):
+    def upload_job_to_s3(self, job_id):
         """Upload job document to S3 and register the S3 URI
         location.
 
@@ -337,7 +348,7 @@ class Job(Resource):
 
         return task
 
-    def upload_blobs(self):
+    def upload_blobs_to_s3(self):
 
         blobs = self.data['blobs']
 
@@ -361,6 +372,26 @@ class Job(Resource):
                     except Exception:
                         raise ApiError("An error ocurred registering "
                                        "the S3 URI location.", 500)
+
+    def save_job_to_influxdb(self, job_id):
+        """Save verification job to InfluxDB
+
+        Parameters
+        ----------
+        job_id : `int`
+            id of the job object previously created.
+        """
+        data = self.data
+
+        date_created = None
+
+        job = JobModel.find_by_id(job_id)
+
+        if job:
+            date_created = job.date_created.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        # async celery task
+        job_to_influxdb.delay(job_id, date_created, data)
 
 
 class JobList(Resource):
