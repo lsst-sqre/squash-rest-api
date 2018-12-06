@@ -142,13 +142,13 @@ def job_to_influxdb(self, job_id, date_created, data):
     for key, value in data['meta'].items():
         # scape white space, comma and equal sign characters
         # https://docs.influxdata.com/influxdb/v0.13/write_protocol
-        key = key.replace(" ", "\ ")
-        key = key.replace(",", "\,")
-        key = key.replace("=", "\=")
+        key = key.replace(" ", "\ ") # noqa
+        key = key.replace(",", "\,") # noqa
+        key = key.replace("=", "\=") # noqa
         if type(value) == str:
-            value = value.replace(" ", "\ ")
-            value = value.replace(",", "\,")
-            value = value.replace("=", "\=")
+            value = value.replace(" ", "\ ") # noqa
+            value = value.replace(",", "\,") # noqa
+            value = value.replace("=", "\=") # noqa
 
         tags.append("{}={}".format(key, value))
 
