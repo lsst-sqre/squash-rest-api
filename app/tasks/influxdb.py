@@ -126,10 +126,13 @@ def job_to_influxdb(self, job_id, date_created, data):
         timestamp = format_timestamp(date_created)
 
     # add the squash job_id and the ci_dataset as metadata
-    data['meta']['squash_job_id'] = job_id
+    data['meta']['squash_id'] = job_id
 
     if 'ci_dataset' in data['meta']['env']:
         data['meta']['ci_dataset'] = data['meta']['env']['ci_dataset']
+
+    if 'ci_id' in data['meta']['env']:
+        data['meta']['ci_id'] = data['meta']['env']['ci_id']
 
     # skip other job metadata when forming tags
     del data['meta']['env']
@@ -137,12 +140,17 @@ def job_to_influxdb(self, job_id, date_created, data):
 
     tags = []
     for key, value in data['meta'].items():
-        # tag values cannot have blank spaces
+        # scape white space, comma and equal sign characters
+        # https://docs.influxdata.com/influxdb/v0.13/write_protocol
+        key = key.replace(" ", "\ ") # noqa
+        key = key.replace(",", "\,") # noqa
+        key = key.replace("=", "\=") # noqa
         if type(value) == str:
-            value = value.replace(" ", "_")
-            tags.append("{}={}".format(key, value))
-        else:
-            tags.append("{}={}".format(key, value))
+            value = value.replace(" ", "\ ") # noqa
+            value = value.replace(",", "\,") # noqa
+            value = value.replace("=", "\=") # noqa
+
+        tags.append("{}={}".format(key, value))
 
     for measurement in fields:
         influxdb_line = format_line(measurement, tags, fields[measurement],
