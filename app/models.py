@@ -191,7 +191,7 @@ class EnvModel(db.Model):
     # Environment display name
     display_name = db.Column(db.String(64), nullable=False)
 
-    job = db.relationship("JobModel", lazy='joined')
+    job = db.relationship("JobModel", lazy='noload')
 
     def __init__(self, name):
 
