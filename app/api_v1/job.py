@@ -1,5 +1,6 @@
 import json
 import warnings
+import time
 
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
@@ -134,32 +135,51 @@ class Job(Resource):
         self.data = Job.parser.parse_args()
 
         try:
+            start = time.time()
             env_id = self.check_or_create_env()
+            end = time.time()
+            app.logger.debug("Time to create env {}s".format(end - start))
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
         try:
+            start = time.time()
             job_id = self.create_job(env_id)
+            end = time.time()
+            app.logger.debug("Time to create job {}s"
+                             .format(end - start))
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
         try:
+            start = time.time()
             self.insert_packages(job_id)
+            end = time.time()
+            app.logger.debug("Time to insert packages {}s"
+                             .format(end - start))
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
         try:
+            start = time.time()
             self.insert_measurements(job_id)
+            end = time.time()
+            app.logger.debug("Time to insert measurements {}s"
+                             .format(end - start))
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
         # async task
         try:
+            start = time.time()
             self.upload_blobs_to_s3()
+            end = time.time()
+            app.logger.debug("Time to trigger blob upload task {}s"
+                             .format(end - start))
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
@@ -167,14 +187,22 @@ class Job(Resource):
         # async, the status of the job upload task can be accessed
         # from the /status resource
         try:
+            start = time.time()
             task = self.upload_job_to_s3(job_id)
+            end = time.time()
+            app.logger.debug("Time to trigger job upload {}s"
+                             .format(end - start))
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
         # async task
         try:
+            start = time.time()
             self.save_job_to_influxdb(job_id)
+            end = time.time()
+            app.logger.debug("Time to trigger influxdb task {}s"
+                             .format(end - start))
         except ApiError as err:
             app.logger.error(err.meassage)
             return {'message': err.meassage}, err.status_code
@@ -243,7 +271,7 @@ class Job(Resource):
         if 'packages' in meta:
             del meta['packages']
         else:
-            raise ApiError("Missing packages metadata.", 400)
+                raise ApiError("Missing packages metadata.", 400)
 
         # what remains in meta is the arbitrary metadata we want to save
         j = JobModel(env_id, env, meta)
