@@ -1,15 +1,14 @@
 import json
 import warnings
-import time
 
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
 from flask import current_app as app
 from flask import url_for
 
+from app.decorators import time_this
 from app.tasks.s3 import get_s3_uri, upload_object
 from app.tasks.influxdb import job_to_influxdb
-
 from app.error import ApiError
 
 from ..models import JobModel, MetricModel, MeasurementModel, PackageModel,\
@@ -135,51 +134,32 @@ class Job(Resource):
         self.data = Job.parser.parse_args()
 
         try:
-            start = time.time()
             env_id = self.check_or_create_env()
-            end = time.time()
-            app.logger.debug("Time to create env {}s".format(end - start))
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
         try:
-            start = time.time()
             job_id = self.create_job(env_id)
-            end = time.time()
-            app.logger.debug("Time to create job {}s"
-                             .format(end - start))
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
         try:
-            start = time.time()
             self.insert_packages(job_id)
-            end = time.time()
-            app.logger.debug("Time to insert packages {}s"
-                             .format(end - start))
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
         try:
-            start = time.time()
             self.insert_measurements(job_id)
-            end = time.time()
-            app.logger.debug("Time to insert measurements {}s"
-                             .format(end - start))
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
         # async task
         try:
-            start = time.time()
             self.upload_blobs_to_s3()
-            end = time.time()
-            app.logger.debug("Time to trigger blob upload task {}s"
-                             .format(end - start))
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
@@ -187,22 +167,14 @@ class Job(Resource):
         # async, the status of the job upload task can be accessed
         # from the /status resource
         try:
-            start = time.time()
             task = self.upload_job_to_s3(job_id)
-            end = time.time()
-            app.logger.debug("Time to trigger job upload {}s"
-                             .format(end - start))
         except ApiError as err:
             app.logger.error(err.message)
             return {'message': err.message}, err.status_code
 
         # async task
         try:
-            start = time.time()
             self.save_job_to_influxdb(job_id)
-            end = time.time()
-            app.logger.debug("Time to trigger influxdb task {}s"
-                             .format(end - start))
         except ApiError as err:
             app.logger.error(err.meassage)
             return {'message': err.meassage}, err.status_code
@@ -213,6 +185,7 @@ class Job(Resource):
                                                       task_id=task.id,
                                                       _external=True)}, 202
 
+    @time_this
     def check_or_create_env(self):
         """Check if env (e.g. Jenkins) exists in the db,
         if not create it.
@@ -243,6 +216,7 @@ class Job(Resource):
 
         return e.id
 
+    @time_this
     def create_job(self, env_id):
         """ Creates the job object
 
@@ -284,6 +258,7 @@ class Job(Resource):
 
         return j.id
 
+    @time_this
     def insert_packages(self, job_id):
         """Insert packages associated with the job.
 
@@ -305,6 +280,7 @@ class Job(Resource):
             except Exception:
                 raise ApiError("An error occurred inserting packages", 500)
 
+    @time_this
     def insert_measurements(self, job_id):
         """Insert measurements associated with the job.
 
@@ -350,6 +326,7 @@ class Job(Resource):
                 raise ApiError("An error occurred inserting "
                                "measurements", 500)
 
+    @time_this
     def upload_job_to_s3(self, job_id):
         """Upload job document to S3 and register the S3 URI
         location.
@@ -376,6 +353,7 @@ class Job(Resource):
 
         return task
 
+    @time_this
     def upload_blobs_to_s3(self):
 
         blobs = self.data['blobs']
@@ -401,6 +379,7 @@ class Job(Resource):
                         raise ApiError("An error ocurred registering "
                                        "the S3 URI location.", 500)
 
+    @time_this
     def save_job_to_influxdb(self, job_id):
         """Save verification job to InfluxDB
 
