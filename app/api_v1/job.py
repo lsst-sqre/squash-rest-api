@@ -6,9 +6,9 @@ from flask_jwt import jwt_required
 from flask import current_app as app
 from flask import url_for
 
+from app.decorators import time_this
 from app.tasks.s3 import get_s3_uri, upload_object
 from app.tasks.influxdb import job_to_influxdb
-
 from app.error import ApiError
 
 from ..models import JobModel, MetricModel, MeasurementModel, PackageModel,\
@@ -185,6 +185,7 @@ class Job(Resource):
                                                       task_id=task.id,
                                                       _external=True)}, 202
 
+    @time_this
     def check_or_create_env(self):
         """Check if env (e.g. Jenkins) exists in the db,
         if not create it.
@@ -215,6 +216,7 @@ class Job(Resource):
 
         return e.id
 
+    @time_this
     def create_job(self, env_id):
         """ Creates the job object
 
@@ -243,7 +245,7 @@ class Job(Resource):
         if 'packages' in meta:
             del meta['packages']
         else:
-            raise ApiError("Missing packages metadata.", 400)
+                raise ApiError("Missing packages metadata.", 400)
 
         # what remains in meta is the arbitrary metadata we want to save
         j = JobModel(env_id, env, meta)
@@ -256,6 +258,7 @@ class Job(Resource):
 
         return j.id
 
+    @time_this
     def insert_packages(self, job_id):
         """Insert packages associated with the job.
 
@@ -277,6 +280,7 @@ class Job(Resource):
             except Exception:
                 raise ApiError("An error occurred inserting packages", 500)
 
+    @time_this
     def insert_measurements(self, job_id):
         """Insert measurements associated with the job.
 
@@ -322,6 +326,7 @@ class Job(Resource):
                 raise ApiError("An error occurred inserting "
                                "measurements", 500)
 
+    @time_this
     def upload_job_to_s3(self, job_id):
         """Upload job document to S3 and register the S3 URI
         location.
@@ -348,6 +353,7 @@ class Job(Resource):
 
         return task
 
+    @time_this
     def upload_blobs_to_s3(self):
 
         blobs = self.data['blobs']
@@ -373,6 +379,7 @@ class Job(Resource):
                         raise ApiError("An error ocurred registering "
                                        "the S3 URI location.", 500)
 
+    @time_this
     def save_job_to_influxdb(self, job_id):
         """Save verification job to InfluxDB
 
