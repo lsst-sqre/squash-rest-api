@@ -245,7 +245,7 @@ class Job(Resource):
         if 'packages' in meta:
             del meta['packages']
         else:
-                raise ApiError("Missing packages metadata.", 400)
+            raise ApiError("Missing packages metadata.", 400)
 
         # what remains in meta is the arbitrary metadata we want to save
         j = JobModel(env_id, env, meta)
