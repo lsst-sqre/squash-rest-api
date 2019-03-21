@@ -1,83 +1,93 @@
-import datetime
-
 from flask_restful import Resource, reqparse
-
-import itertools
+from app.decorators import time_this
 
 from ..models import JobModel as Job
-from ..models import PackageModel as Package
+from ..models import EnvModel as Env
 
 
 class CodeChanges(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument('ci_dataset')
-    parser.add_argument('filter_name')
-    parser.add_argument('period')
+    parser.add_argument('ci_id')
 
-    def pairwise(self, iterable):
-        """Create a list of tuple pairs from a list
-        l -> (l[0], l[1]), (l[1], l[2]), (l[2], l[3]), ...
+    @time_this
+    def get_current(self, ci_id):
+        """ Given the ci_id returns the corresponding job object.
         """
-        a, b = itertools.tee(iterable)
-        next(b, None)
-        return zip(a, b)
+        env = Env.find_by_name(env_name='jenkins')
+        current = Job.find_by_env_data(env_id=env.id, key='ci_id', value=ci_id)
 
-    def compute_code_changes(self, resultset):
+        return current
+
+    @time_this
+    def get_previous(self, ci_id):
+        """ Given the ci_id returns the job corresponding to the
+        previous ci_id.
         """
-        Return the difference in packages between two CI jobs:
-        - packages present in the current job but not
-        in the previous one
-        - packages present in the previous job but
-        removed in the current one
-        - packages present in both but the git commit
-        sha has change
+        queryset = Job.query.order_by(Job.date_created.asc())
+        resultset = queryset.values(Job.env['ci_id'])
 
-        Parameters
-        ----------
-        resultset: dict
-            dictionary containing ci_ids, names, git_shas
-            and git_urls
-
-        Return
-        ------
-        code_changes:
-            dictionary with the ci_id, the packages difference
-            wrt the previous job and the number of packages that
-            changed
-
-        """
-
-        # list of unique ci_id's
         ci_ids = []
         for result in resultset:
-            ci_id = result[0]
-            if ci_id not in ci_ids:
-                ci_ids.append(ci_id)
+            if result[0] not in ci_ids:
+                ci_ids.append(result[0])
 
-        code_changes = []
+        index = 0
+        if ci_id in ci_ids:
+            index = ci_ids.index(ci_id)
 
-        for prev_ci_id, curr_ci_id in self.pairwise(ci_ids):
+        if index == 0:
+            previous = None
+        else:
+            expression = Job.env['ci_id'] == ci_ids[index - 1]
+            previous = queryset.filter(expression).first()
 
-            # ci_id = p[0]
-            # name = p[1]
-            # git_sha = p[2]
-            # git_url = p[3]
+        return previous
 
-            prev_pkgs = set([(p[1], p[2], p[3])
-                             for p in resultset if p[0] == prev_ci_id])
+    @time_this
+    def compute_code_changes(self, previous, current):
+        """ Return the packages in the current job that changed
+            wrt the previous job.
 
-            curr_pkgs = set([(p[1], p[2], p[3])
-                             for p in resultset if p[0] == curr_ci_id])
+            Notes
+            -----
+            The code changes are computed like this:
 
-            diff_pkgs = curr_pkgs.difference(prev_pkgs)
+            - packages present in the current job but not
+            in the previous one
+            - packages present in the previous job but
+            removed in the current one
+            - packages present in both but the git commit
+            sha has change
 
-            if diff_pkgs:
-                code_changes.append({'ci_id': curr_ci_id,
-                                     'packages': list(diff_pkgs),
-                                     'count': len(diff_pkgs)})
+            Parameters
+            ----------
+            previous: Job object
+                Job object containing the previous job
+            current: Job object
+                Job object containing the current job
+
+            Return
+            ------
+            code_changes:
+                dictionary with the the packages that changed and the
+                number of packages that changed.
+        """
+        code_changes = {'packages': [], 'counts': []}
+
+        prev_pkgs = set([(p.name, p.git_sha, p.git_url)
+                        for p in previous.packages])
+
+        curr_pkgs = set([(p.name, p.git_sha, p.git_url)
+                        for p in current.packages])
+
+        diff_pkgs = list(curr_pkgs.difference(prev_pkgs))
+
+        if diff_pkgs:
+            code_changes = {'packages': diff_pkgs, 'counts': len(diff_pkgs)}
 
         return code_changes
 
+    @time_this
     def get(self):
         """
         Retrieve the list of packages that changed wrt to the
@@ -108,62 +118,17 @@ class CodeChanges(Resource):
           200:
             description: List of packages successfully retrieved.
         """
-        # join job and packages and get ci_id, packages name, git_commit
-        # and git_url sorted by date
-
-        queryset = Job.query.join(Package)
-
         args = self.parser.parse_args()
 
-        ci_dataset = args['ci_dataset']
-        if ci_dataset:
-            queryset = queryset.filter(Job.ci_dataset == ci_dataset)
+        code_changes = {'packages': [], 'counts': []}
+        ci_id = args['ci_id']
+        if ci_id:
+            current = self.get_current(ci_id)
+            previous = self.get_previous(ci_id)
 
-        filter_name = args['filter_name']
-        if filter_name:
-            queryset = queryset.filter(Job.meta['filter_name'] == filter_name)
+            if previous:
+                code_changes = self.compute_code_changes(previous, current)
 
-        period = args['period']
-        if period:
-            end = datetime.datetime.today()
-
-            # by default shows last month of data
-            start = end - datetime.timedelta(weeks=4)
-
-            if period == "Last Year":
-                start = end - datetime.timedelta(weeks=48)
-            elif period == "Last 6 Months":
-                start = end - datetime.timedelta(weeks=24)
-            elif period == "Last Month":
-                start = end - datetime.timedelta(weeks=12)
-
-            if period != "All":
-                queryset = queryset.filter(Job.date_created > start)
-
-        queryset = queryset.order_by(Job.date_created.asc())
-
-        generator = queryset.values(Job.env['ci_id'],
-                                    Package.name,
-                                    Package.git_sha,
-                                    Package.git_url)
-
-        resultset = []
-
-        for result in generator:
-            resultset.append(result)
-
-        code_changes = self.compute_code_changes(resultset)
-
-        ci_id_list = []
-        packages_list = []
-        count_list = []
-
-        for code_change in code_changes:
-            ci_id_list.append(code_change['ci_id'])
-            packages_list.append(code_change['packages'])
-            count_list.append(code_change['count'])
-
-        return {'ci_id': ci_id_list,
-                'packages': packages_list,
-                'count': count_list
-                }
+        return {'ci_id': ci_id,
+                'packages': code_changes['packages'],
+                'counts': code_changes['counts']}
