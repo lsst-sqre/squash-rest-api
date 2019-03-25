@@ -106,7 +106,8 @@ def create_app(profile):
     api.add_resource(Monitor, '/monitor', endpoint='monitor')
     api.add_resource(DatasetList, '/datasets', endpoint='datasets')
     api.add_resource(PackageList, '/packages', endpoint='packages')
-    api.add_resource(CodeChanges, '/code_changes', endpoint='code_changes')
+    api.add_resource(CodeChanges, '/code_changes/<string:ci_id>',
+                     endpoint='code_changes')
     api.add_resource(Kpms, '/kpms', endpoint='kpms')
 
     # Miscellaneous
