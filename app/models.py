@@ -283,11 +283,15 @@ class JobModel(db.Model):
         return cls.query.filter_by(id=job_id).first()
 
     @classmethod
-    def find_by_env_data(cls, env_id, key, value):
+    def find_by_env_data(cls, env_id, **kwargs):
 
-        # filter expression used in JSON() field
-        e = cls.env[key] == value
-        return cls.query.filter_by(env_id=env_id).filter(e).first()
+        query = cls.query.filter_by(env_id=env_id)
+
+        for key, value in kwargs.items():
+            expression = cls.env[key] == value
+            query = query.filter(expression)
+
+        return query.first()
 
     def save_to_db(self):
         db.session.add(self)
