@@ -7,23 +7,32 @@ from ..models import EnvModel as Env
 
 class CodeChanges(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument('ci_id')
+    parser.add_argument('ci_name',
+                        type=str,
+                        required=True,
+                        help="This field cannot be left blank.")
 
     @time_this
-    def get_current(self, ci_id):
-        """ Given the ci_id returns the corresponding job object.
+    def get_current(self, ci_id, ci_name):
+        """ Given the ci_id, and ci_name returns the corresponding job object.
         """
         env = Env.find_by_name(env_name='jenkins')
-        current = Job.find_by_env_data(env_id=env.id, key='ci_id', value=ci_id)
+        current = Job.find_by_env_data(env_id=env.id, ci_id=ci_id,
+                                       ci_name=ci_name)
 
         return current
 
     @time_this
-    def get_previous(self, ci_id):
-        """ Given the ci_id returns the job corresponding to the
+    def get_previous(self, ci_id, ci_name):
+        """ Given the ci_id, and ci_name returns the job corresponding to the
         previous ci_id.
         """
+        env = Env.find_by_name(env_name='jenkins')
+
         queryset = Job.query.order_by(Job.date_created.asc())
+        queryset = queryset.filter(Job.env_id == env.id)
+        queryset = queryset.filter(Job.env['ci_name'] == ci_name)
+
         resultset = queryset.values(Job.env['ci_id'])
 
         ci_ids = []
@@ -32,12 +41,9 @@ class CodeChanges(Resource):
                 ci_ids.append(result[0])
 
         index = 0
+        previous = None
         if ci_id in ci_ids:
             index = ci_ids.index(ci_id)
-
-        if index == 0:
-            previous = None
-        else:
             expression = Job.env['ci_id'] == ci_ids[index - 1]
             previous = queryset.filter(expression).first()
 
@@ -72,7 +78,6 @@ class CodeChanges(Resource):
                 dictionary with the the packages that changed and the
                 number of packages that changed.
         """
-        code_changes = {'packages': [], 'counts': []}
 
         prev_pkgs = set([(p.name, p.git_sha, p.git_url)
                         for p in previous.packages])
@@ -82,13 +87,13 @@ class CodeChanges(Resource):
 
         diff_pkgs = list(curr_pkgs.difference(prev_pkgs))
 
+        code_changes = {'packages': [], 'counts': 0}
         if diff_pkgs:
             code_changes = {'packages': diff_pkgs, 'counts': len(diff_pkgs)}
 
         return code_changes
 
-    @time_this
-    def get(self):
+    def get(self, ci_id):
         """
         Retrieve the list of packages that changed wrt to the
         previous job.
@@ -119,16 +124,21 @@ class CodeChanges(Resource):
             description: List of packages successfully retrieved.
         """
         args = self.parser.parse_args()
+        ci_name = args['ci_name']
 
-        code_changes = {'packages': [], 'counts': []}
-        ci_id = args['ci_id']
-        if ci_id:
-            current = self.get_current(ci_id)
-            previous = self.get_previous(ci_id)
+        code_changes = {'packages': [], 'counts': 0}
+        id = None
+        current = self.get_current(ci_id, ci_name)
+        if current:
+            id = current.id
 
-            if previous:
-                code_changes = self.compute_code_changes(previous, current)
+        previous_id = None
+        previous = self.get_previous(ci_id, ci_name)
+        if previous:
+            code_changes = self.compute_code_changes(previous, current)
+            previous_id = previous.id
 
-        return {'ci_id': ci_id,
+        return {'id': id,
+                'previous_id': previous_id,
                 'packages': code_changes['packages'],
                 'counts': code_changes['counts']}
