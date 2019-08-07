@@ -11,10 +11,9 @@ services:
 install:
   - pip install flake8
   - pip install -r requirements.txt
+dist: xenial
 addons:
   apt:
-    sources:
-      - mysql-5.7-trusty
     packages:
       - mysql-server
       - mysql-client
