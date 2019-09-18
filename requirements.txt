@@ -2,9 +2,9 @@ flask-restful
 flask-jwt
 flask-sqlalchemy
 pymysql
+jsonschema<3.0.0
 flasgger
 numpy
-mysqlclient
 uWSGI
 click
 boto3
