@@ -359,9 +359,8 @@ class SpecificationList(Resource):
             try:
                 spec.save_to_db()
             except Exception:
-
                 message = "An error ocurred creating this metric " \
-                          "specification".format(name)
+                          "specification `{}`.".format(name)
 
                 return {"message": message}, 500
 

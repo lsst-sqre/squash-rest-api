@@ -23,7 +23,7 @@ clean:
 
 test:
 	flake8 app tests
-	./test.py
+	coverage run --source=app test.py
 
 mysql: check-squash-db-credentials
 	docker run --rm --name mysql -e MYSQL_ROOT_PASSWORD=${SQUASH_DB_PASSWORD} -p 3306:3306 -d mysql:5.7
