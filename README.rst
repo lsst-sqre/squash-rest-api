@@ -2,7 +2,7 @@
 SQuaSH API
 ##########
 
-The SQuaSH API is a Flask app for managing `verification jobs, metrics definitions and specifications <https://sqr-019.lsst.io/>`_ and recording them in the SQuaSH database. You can learn more about SQuaSH in `SQR-009 <https://sqr-009.lsst.io>`_.
+The SQuaSH API is a Flask app for managing the SQuaSH database. You can learn more about SQuaSH in `SQR-009 <https://sqr-009.lsst.io>`_.
 
 
 Deployment
