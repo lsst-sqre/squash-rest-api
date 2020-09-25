@@ -1,0 +1,15 @@
+# Editable development dependencies
+# Add direct development, test, and documentation dependencies here, as well
+# as implicit dev dependencies with constrained versions.
+#
+# After editing, update requirements/dev.txt by running:
+#     make update-deps
+
+pre-commit==2.6.0
+coverage[toml]==5.2.1
+flake8==3.8.3
+flake8-docstrings==1.5.0
+mypy==0.782
+pytest==6.0.1
+pytest-asyncio==0.14.0
+pytest-vcr==1.0.2
