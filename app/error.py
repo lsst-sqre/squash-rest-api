@@ -1,6 +1,9 @@
+"""Implement SQuaSH API exceptions."""
+
+
 class ApiError(Exception):
-    """Basic exception for errors raised by the api.
-    """
+    """Basic exception for errors raised by the api."""
+
     def __init__(self, message=None, status_code=None):
         if message is None:
             message = "An error ocurred."

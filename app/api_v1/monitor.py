@@ -2,17 +2,17 @@ import datetime
 
 from flask_restful import Resource, reqparse
 
-from ..models import MeasurementModel as Measurement
 from ..models import JobModel as Job
+from ..models import MeasurementModel as Measurement
 from ..models import MetricModel as Metric
 
 
 class Monitor(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument('ci_dataset')
-    parser.add_argument('filter_name')
-    parser.add_argument('metric')
-    parser.add_argument('period')
+    parser.add_argument("ci_dataset")
+    parser.add_argument("filter_name")
+    parser.add_argument("metric")
+    parser.add_argument("period")
 
     def get(self):
         """
@@ -48,19 +48,19 @@ class Monitor(Resource):
 
         args = self.parser.parse_args()
 
-        ci_dataset = args['ci_dataset']
+        ci_dataset = args["ci_dataset"]
         if ci_dataset:
             queryset = queryset.filter(Job.ci_dataset == ci_dataset)
 
-        filter_name = args['filter_name']
+        filter_name = args["filter_name"]
         if filter_name:
-            queryset = queryset.filter(Job.meta['filter_name'] == filter_name)
+            queryset = queryset.filter(Job.meta["filter_name"] == filter_name)
 
-        metric = args['metric']
+        metric = args["metric"]
         if metric:
             queryset = queryset.filter(Metric.name == metric)
 
-        period = args['period']
+        period = args["period"]
         if period:
             end = datetime.datetime.today()
 
@@ -80,14 +80,15 @@ class Monitor(Resource):
         queryset = queryset.order_by(Job.date_created.asc())
 
         # TODO: test environment first
-        generator = queryset.values(Measurement.value,
-                                    Measurement.metric_name,
-                                    Job.date_created,
-                                    Job.env['ci_id'],
-                                    Job.env['ci_url'],
-                                    Job.meta['filter_name'],
-                                    Job.id
-                                    )
+        generator = queryset.values(
+            Measurement.value,
+            Measurement.metric_name,
+            Job.date_created,
+            Job.env["ci_id"],
+            Job.env["ci_url"],
+            Job.meta["filter_name"],
+            Job.id,
+        )
 
         value_list = []
         metric_name_list = []
@@ -97,22 +98,32 @@ class Monitor(Resource):
         job_filter_name_list = []
         job_id_list = []
 
-        for value, metric_name, date_created, ci_id, ci_url, \
-                job_filter_name, job_id in generator:
+        for (
+            value,
+            metric_name,
+            date_created,
+            ci_id,
+            ci_url,
+            job_filter_name,
+            job_id,
+        ) in generator:
 
             value_list.append(value)
             metric_name_list.append(metric_name)
-            date_created_list.append(date_created.
-                                     strftime("%Y-%m-%dT%H:%M:%SZ"))
+            date_created_list.append(
+                date_created.strftime("%Y-%m-%dT%H:%M:%SZ")
+            )
             ci_id_list.append(ci_id)
             ci_url_list.append(ci_url)
             job_filter_name_list.append(job_filter_name)
             job_id_list.append(job_id)
 
-        return {'value': value_list,
-                'date_created': date_created_list,
-                'metric_name': metric_name_list,
-                'ci_id': ci_id_list,
-                'ci_url': ci_url_list,
-                'filter_name': job_filter_name_list,
-                'job_id': job_id_list}
+        return {
+            "value": value_list,
+            "date_created": date_created_list,
+            "metric_name": metric_name_list,
+            "ci_id": ci_id_list,
+            "ci_url": ci_url_list,
+            "filter_name": job_filter_name_list,
+            "job_id": job_id_list,
+        }

@@ -1,27 +1,30 @@
-from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
+from flask_restful import Resource, reqparse
 
-from ..models import MeasurementModel, JobModel, MetricModel
+from ..models import JobModel, MeasurementModel, MetricModel
 
 
 class Measurement(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument('value',
-                        type=float,
-                        required=True,
-                        help="This field cannot be left blank."
-                        )
-    parser.add_argument('unit',
-                        type=str,
-                        required=True,
-                        help="This field cannot be left blank."
-                        )
-    parser.add_argument('metric',
-                        type=str,
-                        required=True,
-                        help="You must provide a metric name associated "
-                             "to the measurement."
-                        )
+    parser.add_argument(
+        "value",
+        type=float,
+        required=True,
+        help="This field cannot be left blank.",
+    )
+    parser.add_argument(
+        "unit",
+        type=str,
+        required=True,
+        help="This field cannot be left blank.",
+    )
+    parser.add_argument(
+        "metric",
+        type=str,
+        required=True,
+        help="You must provide a metric name associated "
+        "to the measurement.",
+    )
 
     def get(self, job_id):
         """
@@ -49,12 +52,15 @@ class Measurement(Resource):
             # find the associated measurements
             measurements = MeasurementModel.find_by_job_id(job.id)
 
-            return {'measurements': [measurement.json() for measurement
-                                     in measurements]}
+            return {
+                "measurements": [
+                    measurement.json() for measurement in measurements
+                ]
+            }
         else:
-            message = 'Job `{}` not found.'.format(job_id)
+            message = "Job `{}` not found.".format(job_id)
 
-            return {'message': message}, 404
+            return {"message": message}, 404
 
     @jwt_required()
     def post(self, job_id):
@@ -103,24 +109,25 @@ class Measurement(Resource):
         job = JobModel.find_by_id(job_id)
 
         if job:
-            metric_name = data['metric']
+            metric_name = data["metric"]
             # find the associated metric
             metric = MetricModel.find_by_name(metric_name)
         else:
             message = "Job `{}` not found.".format(job_id)
-            return {'message': message}, 404
+            return {"message": message}, 404
 
         if metric:
             measurement = MeasurementModel(job.id, metric.id, **data)
         else:
             message = "Metric `{}` not found.".format(metric_name)
-            return {'message': message}, 404
+            return {"message": message}, 404
 
         try:
             measurement.save_to_db()
         except Exception:
-            return {"message": "An error occurred inserting the "
-                               "measurement."}, 500
+            return {
+                "message": "An error occurred inserting the " "measurement."
+            }, 500
 
         return measurement.json(), 201
 
@@ -136,5 +143,9 @@ class MeasurementList(Resource):
           200:
             description: List of Measurements successfully retrieved.
         """
-        return {'measurements': [measurement.json() for measurement
-                                 in MeasurementModel.query.all()]}
+        return {
+            "measurements": [
+                measurement.json()
+                for measurement in MeasurementModel.query.all()
+            ]
+        }

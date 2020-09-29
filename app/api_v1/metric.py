@@ -1,6 +1,5 @@
-from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
-
+from flask_restful import Resource, reqparse
 from sqlalchemy.orm import noload
 
 from ..models import MetricModel
@@ -8,26 +7,18 @@ from ..models import MetricModel
 
 class Metric(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument('description',
-                        type=str,
-                        required=True,
-                        help="You must provide the package name associated "
-                             "to this metric."
-                        )
-    parser.add_argument('package',
-                        type=str
-                        )
-    parser.add_argument('unit',
-                        type=str
-                        )
+    parser.add_argument(
+        "description",
+        type=str,
+        required=True,
+        help="You must provide the package name associated " "to this metric.",
+    )
+    parser.add_argument("package", type=str)
+    parser.add_argument("unit", type=str)
     # accept multiple values
     # http://flask-restful.readthedocs.io/en/0.3.5/reqparse.html
-    parser.add_argument('tags',
-                        type=str, action="append"
-                        )
-    parser.add_argument('reference',
-                        type=dict
-                        )
+    parser.add_argument("tags", type=str, action="append")
+    parser.add_argument("reference", type=dict)
 
     def get(self, name):
         """
@@ -52,13 +43,14 @@ class Metric(Resource):
         if metric:
             return metric.json()
 
-        return {'message': 'Metric not found'}, 404
+        return {"message": "Metric not found"}, 404
 
     @jwt_required()
     def post(self, name):
         """
         Create a metric.
         ---
+
         tags:
           - Metrics
         parameters:
@@ -94,21 +86,22 @@ class Metric(Resource):
           500:
             description: An error occurred creating this metric.
         """
-
         data = Metric.parser.parse_args()
 
         if "." in name:
-            data['package'], data['display_name'] = name.split(".")
+            data["package"], data["display_name"] = name.split(".")
         else:
-            message = "You must provide a full qualified name for" \
-                      " the metric, e.g. validate_drp.AM1"
+            message = (
+                "You must provide a full qualified name for"
+                " the metric, e.g. validate_drp.AM1"
+            )
 
             return {"message": message}
 
         # Metric names are unique
         if MetricModel.find_by_name(name):
             message = "A metric with name `{}` already exist.".format(name)
-            return {'message': message}, 400
+            return {"message": message}, 400
 
         metric = MetricModel(name, **data)
 
@@ -167,12 +160,12 @@ class Metric(Resource):
 
         if not metric:
             message = "Metric `{}` not found.".format(name)
-            return {'message': message}, 404
+            return {"message": message}, 404
 
-        metric.description = data['description']
-        metric.unit = data['unit']
-        metric.tags = data['tags']
-        metric.reference = data['reference']
+        metric.description = data["description"]
+        metric.unit = data["unit"]
+        metric.tags = data["tags"]
+        metric.reference = data["reference"]
 
         try:
             metric.save_to_db()
@@ -211,16 +204,13 @@ class Metric(Resource):
             return {"message": "Metric `{}` not found.".format(name)}, 404
 
         metric.delete_from_db()
-        return {'message': 'Metric deleted.'}
+        return {"message": "Metric deleted."}
 
 
 class MetricList(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument("metrics",
-                        type=dict,
-                        action="append"
-                        )
-    parser.add_argument('package')
+    parser.add_argument("metrics", type=dict, action="append")
+    parser.add_argument("package")
 
     def get(self):
         """
@@ -242,14 +232,20 @@ class MetricList(Resource):
 
         args = self.parser.parse_args()
 
-        package = args['package']
+        package = args["package"]
 
         if package:
             queryset = queryset.filter(MetricModel.package == package)
 
-        return {'metrics': [metric.json() for metric in
-                            queryset.options(noload(MetricModel.measurement),
-                            noload(MetricModel.specification)).all()]}
+        return {
+            "metrics": [
+                metric.json()
+                for metric in queryset.options(
+                    noload(MetricModel.measurement),
+                    noload(MetricModel.specification),
+                ).all()
+            ]
+        }
 
     @jwt_required()
     def post(self):
@@ -281,23 +277,25 @@ class MetricList(Resource):
             description: An error occurred loading the metrics.
         """
 
-        metrics = MetricList.parser.parse_args()['metrics']
+        metrics = MetricList.parser.parse_args()["metrics"]
 
         for data in metrics:
 
-            name = data['name']
+            name = data["name"]
 
             if "." in name:
-                data['package'], data['display_name'] = name.split(".")
+                data["package"], data["display_name"] = name.split(".")
             else:
-                message = "You must provide a full qualified name for" \
-                          " the metric, e.g. validate_drp.AM1"
+                message = (
+                    "You must provide a full qualified name for"
+                    " the metric, e.g. validate_drp.AM1"
+                )
 
                 return {"message": message}
 
             if MetricModel.find_by_name(name):
                 message = "A metric with name `{}` already exist.".format(name)
-                return {'message': message}, 400
+                return {"message": message}, 400
 
             metric = MetricModel(**data)
 
@@ -305,8 +303,9 @@ class MetricList(Resource):
                 metric.save_to_db()
             except Exception as error:
 
-                message = "An error occurred inserting metric "\
-                          "`{}`.".format(name)
+                message = "An error occurred inserting metric " "`{}`.".format(
+                    name
+                )
 
                 return {"message": message, "error": str(error)}, 500
 

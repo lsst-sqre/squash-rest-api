@@ -94,7 +94,7 @@ exclude = '''
 include_trailing_comma = true
 multi_line_output = 3
 known_first_party = ["squash-api", "tests"]
-known_third_party = ["app", "boto3", "botocore", "celery", "click", "dateutil", "flasgger", "flask", "flask_jwt", "flask_restful", "flask_sqlalchemy", "numpy", "pytz", "requests", "setuptools", "sqlalchemy", "werkzeug"]
+known_third_party = ["app", "boto3", "botocore", "celery", "click", "flasgger", "flask", "flask_jwt", "flask_restful", "flask_sqlalchemy", "numpy", "requests", "setuptools", "sqlalchemy", "werkzeug"]
 skip = ["docs/conf.py"]
 
 

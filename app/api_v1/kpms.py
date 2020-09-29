@@ -1,20 +1,20 @@
 from flask_restful import Resource, reqparse
 from sqlalchemy import func
 
-from ..models import MeasurementModel as Measurement
 from ..models import JobModel as Job
+from ..models import MeasurementModel as Measurement
 from ..models import MetricModel as Metric
 from ..models import SpecificationModel as Specification
 
 
 class Kpms(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument('job_id')
-    parser.add_argument('package')
-    parser.add_argument('filter_name')
-    parser.add_argument('dataset_name')
-    parser.add_argument('metric_tag')
-    parser.add_argument('specification_tag')
+    parser.add_argument("job_id")
+    parser.add_argument("package")
+    parser.add_argument("filter_name")
+    parser.add_argument("dataset_name")
+    parser.add_argument("metric_tag")
+    parser.add_argument("specification_tag")
 
     def get(self):
         """
@@ -66,12 +66,12 @@ class Kpms(Resource):
 
         args = self.parser.parse_args()
 
-        job_id = args['job_id']
+        job_id = args["job_id"]
 
         # If job_id is not specified, return results for the most recent job
         # for a given dataset and package
         if not job_id:
-            package = args['package']
+            package = args["package"]
             if package:
                 queryset = queryset.filter(Metric.package == package)
 
@@ -83,46 +83,49 @@ class Kpms(Resource):
         # `dataset_name` is used to select the right metric specification, and
         # also ensures that the job was executed on that dataset
 
-        dataset_name = args['dataset_name']
+        dataset_name = args["dataset_name"]
         if dataset_name:
             queryset = queryset.filter(Job.ci_dataset == dataset_name)
-            expr = Specification.metadata_query['dataset_name'] == dataset_name
+            expr = Specification.metadata_query["dataset_name"] == dataset_name
             queryset = queryset.filter(expr)
 
         # `filter_name` corresponds to the name of the filter in the metric
         # specification, if it is provided only chromatic metrics are returned
-        filter_name = args['filter_name']
+        filter_name = args["filter_name"]
         if filter_name:
-            queryset = queryset.filter(Job.meta['filter_name'] == filter_name)
+            queryset = queryset.filter(Job.meta["filter_name"] == filter_name)
             # get the corresponding specification for
-            expr = Specification.metadata_query['filter_name'] == filter_name
+            expr = Specification.metadata_query["filter_name"] == filter_name
             queryset = queryset.filter(expr)
 
-        metric_tag = args['metric_tag']
+        metric_tag = args["metric_tag"]
         if metric_tag:
             # https://stackoverflow.com/questions/33513625/
             # invalid-json-text-in-argument-2-json-contains-in-mysql-5-7-8
             expr = func.json_contains(Metric.tags, '"{}"'.format(metric_tag))
             queryset = queryset.filter(expr)
 
-        specification_tag = args['specification_tag']
+        specification_tag = args["specification_tag"]
         if specification_tag:
-            expr = func.json_contains(Specification.tags,
-                                      '"{}"'.format(specification_tag))
+            expr = func.json_contains(
+                Specification.tags, '"{}"'.format(specification_tag)
+            )
             queryset = queryset.filter(expr)
 
-        generator = queryset.values(Measurement.value,
-                                    Measurement.metric_name,
-                                    Metric.display_name,
-                                    Metric.tags,
-                                    Specification.name,
-                                    Specification.tags,
-                                    Specification.threshold,
-                                    Specification.metadata_query,
-                                    Job.date_created,
-                                    Job.ci_dataset,
-                                    Job.meta['filter_name'],
-                                    Job.id)
+        generator = queryset.values(
+            Measurement.value,
+            Measurement.metric_name,
+            Metric.display_name,
+            Metric.tags,
+            Specification.name,
+            Specification.tags,
+            Specification.threshold,
+            Specification.metadata_query,
+            Job.date_created,
+            Job.ci_dataset,
+            Job.meta["filter_name"],
+            Job.id,
+        )
 
         value_list = []
         metric_name_list = []
@@ -137,10 +140,20 @@ class Kpms(Resource):
         job_filter_name_list = []
         job_id_list = []
 
-        for value, metric_name, metric_display_name, metric_tags, spec_name,\
-                spec_tags, spec_threshold, spec_metadata_query,\
-                job_date_created, job_dataset_name, job_filter_name,\
-                job_id in generator:
+        for (
+            value,
+            metric_name,
+            metric_display_name,
+            metric_tags,
+            spec_name,
+            spec_tags,
+            spec_threshold,
+            spec_metadata_query,
+            job_date_created,
+            job_dataset_name,
+            job_filter_name,
+            job_id,
+        ) in generator:
 
             value_list.append(value)
             metric_name_list.append(metric_name)
@@ -156,15 +169,17 @@ class Kpms(Resource):
             job_filter_name_list.append(job_filter_name)
             job_id_list.append(job_id)
 
-        return {'value': value_list,
-                'metric_name': metric_name_list,
-                'metric_tags': metric_tags_list,
-                'metric_display_name': metric_display_name_list,
-                'spec_name': spec_name_list,
-                'spec_tags': spec_tags_list,
-                'spec_threshold': spec_threshold_list,
-                'spec_metadata_query': spec_metadata_query_list,
-                'job_date_created': job_date_created_list,
-                'job_dataset_name': job_dataset_name_list,
-                'job_filter_name': job_filter_name_list,
-                'job_id': job_id_list}
+        return {
+            "value": value_list,
+            "metric_name": metric_name_list,
+            "metric_tags": metric_tags_list,
+            "metric_display_name": metric_display_name_list,
+            "spec_name": spec_name_list,
+            "spec_tags": spec_tags_list,
+            "spec_threshold": spec_threshold_list,
+            "spec_metadata_query": spec_metadata_query_list,
+            "job_date_created": job_date_created_list,
+            "job_dataset_name": job_dataset_name_list,
+            "job_filter_name": job_filter_name_list,
+            "job_id": job_id_list,
+        }

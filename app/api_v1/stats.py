@@ -1,8 +1,8 @@
 from flask_restful import Resource
 
 from ..models import JobModel as Job
-from ..models import MetricModel as Metric
 from ..models import MeasurementModel as Measurement
+from ..models import MetricModel as Metric
 
 
 class Stats(Resource):
@@ -25,9 +25,9 @@ class Stats(Resource):
         number_of_metrics = Metric.query.count()
         number_of_measurements = Measurement.query.count()
 
-        stats['last_job_date'] = last_job_date
-        stats['number_of_jobs'] = number_of_jobs
-        stats['number_of_metrics'] = number_of_metrics
-        stats['number_of_measurements'] = number_of_measurements
+        stats["last_job_date"] = last_job_date
+        stats["number_of_jobs"] = number_of_jobs
+        stats["number_of_metrics"] = number_of_metrics
+        stats["number_of_measurements"] = number_of_measurements
 
-        return {'stats': stats}
+        return {"stats": stats}

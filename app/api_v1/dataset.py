@@ -1,5 +1,5 @@
-from flask import jsonify
 from flask import current_app as app
+from flask import jsonify
 from flask_restful import Resource
 
 from ..models import JobModel as Job
@@ -22,4 +22,4 @@ class DatasetList(Resource):
         except StopIteration:
             app.logger.warn("No datasets found.")
 
-        return jsonify({'datasets': datasets})
+        return jsonify({"datasets": datasets})

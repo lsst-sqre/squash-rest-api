@@ -1,5 +1,5 @@
-from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
+from flask_restful import Resource, reqparse
 
 from ..models import UserModel
 
@@ -7,17 +7,13 @@ from ..models import UserModel
 class Register(Resource):
 
     parser = reqparse.RequestParser()
-    parser.add_argument('username',
-                        type=str,
-                        required=True,
-                        help="This field cannot be blank."
-                        )
+    parser.add_argument(
+        "username", type=str, required=True, help="This field cannot be blank."
+    )
 
-    parser.add_argument('password',
-                        type=str,
-                        required=True,
-                        help="This field cannot be blank."
-                        )
+    parser.add_argument(
+        "password", type=str, required=True, help="This field cannot be blank."
+    )
 
     def post(self):
         """
@@ -46,18 +42,18 @@ class Register(Resource):
         """
         data = Register.parser.parse_args()
 
-        if UserModel.find_by_username(data['username']):
-            return {"message": "A user with that username already "
-                    "exists."}, 400
+        if UserModel.find_by_username(data["username"]):
+            return {
+                "message": "A user with that username already " "exists."
+            }, 400
 
-        user = UserModel(data['username'], data['password'])
+        user = UserModel(data["username"], data["password"])
         user.save_to_db()
 
         return {"message": "User created successfully."}, 201
 
 
 class User(Resource):
-
     def get(self, username):
         """
         Retrieve a user from SQuaSH.
@@ -116,7 +112,6 @@ class User(Resource):
 
 
 class UserList(Resource):
-
     def get(self):
         """
         Retrieve the complete list of SQuaSH users.
@@ -127,5 +122,8 @@ class UserList(Resource):
           200:
             description: List of users successfully retrieved
         """
-        return {"users": [user.json()['username'] for user
-                          in UserModel.query.all()]}
+        return {
+            "users": [
+                user.json()["username"] for user in UserModel.query.all()
+            ]
+        }

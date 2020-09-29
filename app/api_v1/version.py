@@ -12,4 +12,4 @@ class Version(Resource):
           200:
             description: Version successfully retrieved
         """
-        return {'version': '1.0'}
+        return {"version": "1.0"}

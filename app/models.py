@@ -1,38 +1,45 @@
-import os
-import numpy as np
-from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
+"""Implement SQuaSH API database model."""
 
-# Implements JSON data type in MySQL 5.7 see
-# https://jira.lsstcorp.org/browse/DM-12191
-from sqlalchemy.dialects.mysql import JSON
-from sqlalchemy.dialects.mysql import TIMESTAMP
-from sqlalchemy.sql import expression
+import os
+from datetime import datetime
+
+import numpy as np
+from sqlalchemy.dialects.mysql import JSON, TIMESTAMP
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql import expression
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from .db import db
 
-SQUASH_ETL_MODE = os.environ.get('SQUASH_ETL_MODE', False)
+SQUASH_ETL_MODE = os.environ.get("SQUASH_ETL_MODE", False)
 
 
 # https://jira.lsstcorp.org/browse/DM-12193
 class now(expression.FunctionElement):
+    """Use the TIMESTAMP datatype.
+
+    Using the TIMESTAMP datatype in MySQL we Store timestamps in UTC
+    computed always server side.
+    """
+
     type = TIMESTAMP
 
 
-@compiles(now, 'mysql')
+@compiles(now, "mysql")
 def mysql_now(element, compiler, **kw):
+    """Implement the MySQL now() using the TIMESTAMP datatype."""
     return "CURRENT_TIMESTAMP()"
 
 
 class UserModel(db.Model):
-    """Database model for authenticated API users.
-    """
-    __tablename__ = 'user'
+    """Database model for authenticated API users."""
+
+    __tablename__ = "user"
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True,
-                         index=True, nullable=False)
+    username = db.Column(
+        db.String(64), unique=True, index=True, nullable=False
+    )
     password_hash = db.Column(db.String(128), nullable=False)
 
     def __init__(self, username, password):
@@ -40,35 +47,44 @@ class UserModel(db.Model):
         self.password_hash = generate_password_hash(password)
 
     def verify_password(self, password):
-        """Verify the user password against the password hash saved
-        in the database."""
+        """Verify the user password.
+
+        Verify passward against the password hash saved in the database.
+        """
         return check_password_hash(self.password_hash, password)
 
     def json(self):
-        return {'username': self.username}
+        """Return JSON serialized username."""
+        return {"username": self.username}
 
     def save_to_db(self):
+        """Save user to database."""
         db.session.add(self)
         db.session.commit()
 
     def delete_from_db(self):
+        """Delete user from the database."""
         db.session.delete(self)
         db.session.commit()
 
     @classmethod
     def find_by_username(cls, username):
+        """Find user record by username."""
         return cls.query.filter_by(username=username).first()
 
     @classmethod
     def find_by_id(cls, _id):
+        """Find user record by user id."""
         return cls.query.filter_by(id=_id).first()
 
 
 class MetricModel(db.Model):
-    """Database model for metrics as defined
-    in the lsst.verify package. See https://sqr-019.lsst.io/
+    """Database model for metrics.
+
+    See metric definition in https://sqr-019.lsst.io
     """
-    __tablename__ = 'metric'
+
+    __tablename__ = "metric"
 
     id = db.Column(db.Integer, primary_key=True)
     # Full qualified name of the metric including the package
@@ -89,12 +105,19 @@ class MetricModel(db.Model):
     # usually with a handle to the document, a url and a page number.
     reference = db.Column(JSON())
 
-    specification = db.relationship('SpecificationModel', lazy='joined')
-    measurement = db.relationship('MeasurementModel', lazy='joined')
+    specification = db.relationship("SpecificationModel", lazy="joined")
+    measurement = db.relationship("MeasurementModel", lazy="joined")
 
-    def __init__(self, name, package=None, display_name=None,
-                 description=None, unit=None, tags=None,
-                 reference=None):
+    def __init__(
+        self,
+        name,
+        package=None,
+        display_name=None,
+        description=None,
+        unit=None,
+        tags=None,
+        reference=None,
+    ):
 
         self.name = name
         self.package = package
@@ -105,32 +128,40 @@ class MetricModel(db.Model):
         self.reference = reference
 
     def json(self):
-        return {'name': self.name,
-                'package': self.package,
-                'display_name': self.display_name,
-                'description': self.description,
-                'unit': self.unit,
-                'tags': self.tags,
-                'reference': self.reference}
+        """Return JSON serialized metric object."""
+        return {
+            "name": self.name,
+            "package": self.package,
+            "display_name": self.display_name,
+            "description": self.description,
+            "unit": self.unit,
+            "tags": self.tags,
+            "reference": self.reference,
+        }
 
     @classmethod
     def find_by_name(cls, name):
+        """Find metric by name."""
         return cls.query.filter_by(name=name).first()
 
     def save_to_db(self):
+        """Save metric to database."""
         db.session.add(self)
         db.session.commit()
 
     def delete_from_db(self):
+        """Delete metric from the databse."""
         db.session.delete(self)
         db.session.commit()
 
 
 class SpecificationModel(db.Model):
-    """Database model for metric specifications as defined
-    in the lsst.verify package. See https://sqr-019.lsst.io/
+    """Database model for specifications.
+
+    See specifications in https://sqr-019.lsst.io
     """
-    __tablename__ = 'spec'
+
+    __tablename__ = "spec"
 
     id = db.Column(db.Integer, primary_key=True)
     # Full qualified name of the specification, e.g.
@@ -148,10 +179,17 @@ class SpecificationModel(db.Model):
     type = db.Column(db.String(64))
 
     # Id of the metric this specification applies to
-    metric_id = db.Column(db.Integer, db.ForeignKey('metric.id'))
+    metric_id = db.Column(db.Integer, db.ForeignKey("metric.id"))
 
-    def __init__(self, name, metric_id, threshold=None, tags=None,
-                 metadata_query=None, type=None):
+    def __init__(
+        self,
+        name,
+        metric_id,
+        threshold=None,
+        tags=None,
+        metadata_query=None,
+        type=None,
+    ):
 
         self.name = name
         self.metric_id = metric_id
@@ -161,29 +199,37 @@ class SpecificationModel(db.Model):
         self.type = type
 
     def json(self):
-        return {'name': self.name,
-                'threshold': self.threshold,
-                'tags': self.tags,
-                'metadata_query': self.metadata_query}
+        """Return JSON serialized specification."""
+        return {
+            "name": self.name,
+            "threshold": self.threshold,
+            "tags": self.tags,
+            "metadata_query": self.metadata_query,
+        }
 
     @classmethod
     def find_by_name(cls, name):
+        """Find specification by name."""
         return cls.query.filter_by(name=name).first()
 
     def save_to_db(self):
+        """Save specification to the database."""
         db.session.add(self)
         db.session.commit()
 
     def delete_from_db(self):
+        """Delete specification from the datbase."""
         db.session.delete(self)
         db.session.commit()
 
 
 class EnvModel(db.Model):
     """Database model for execution environments.
-    See https://sqr-009.lsst.io/
+
+    See execution enviroments in https://sqr-009.lsst.io
     """
-    __tablename__ = 'env'
+
+    __tablename__ = "env"
 
     id = db.Column(db.Integer, primary_key=True)
     # Name of the environment
@@ -191,47 +237,52 @@ class EnvModel(db.Model):
     # Environment display name
     display_name = db.Column(db.String(64), nullable=False)
 
-    job = db.relationship("JobModel", lazy='noload')
+    job = db.relationship("JobModel", lazy="noload")
 
     def __init__(self, name):
-
         self.name = name
         self.display_name = name.title()
 
     def json(self):
-        return {'name': self.name,
-                'display_name': self.display_name}
+        """Return JSON serialized environment."""
+        return {"name": self.name, "display_name": self.display_name}
 
     @classmethod
     def find_by_name(cls, env_name):
+        """Find environment by name."""
         return cls.query.filter_by(name=env_name).first()
 
     def save_to_db(self):
+        """Save environment to database."""
         db.session.add(self)
         db.session.commit()
 
     def delete_from_db(self):
+        """Delete environment from the database."""
         db.session.delete(self)
         db.session.commit()
 
 
 class JobModel(db.Model):
-    """Database model for jobs as defined
-    in the lsst.verify package. See https://sqr-019.lsst.io/
+    """Database model for jobs.
+
+    See verification jobs in See https://sqr-019.lsst.io
     """
-    __tablename__ = 'job'
+
+    __tablename__ = "job"
 
     id = db.Column(db.Integer, primary_key=True)
 
     # Id of the environment this job has run
-    env_id = db.Column(db.Integer, db.ForeignKey('env.id'))
+    env_id = db.Column(db.Integer, db.ForeignKey("env.id"))
     # Name of the dataset used in this job, extrated from the
     # environment
     # FIXME: DM-14538 Remove ci_dataset from job model
     ci_dataset = db.Column(db.String(32), default=None)
     # Timestamp when the actual job object was created
-    date_created = db.Column(db.TIMESTAMP, nullable=False,
-                             server_default=now())
+    date_created = db.Column(
+        db.TIMESTAMP, nullable=False, server_default=now()
+    )
     env = db.Column(JSON())
     meta = db.Column(JSON())
     # URI of the object store repository for this job, note that this
@@ -239,74 +290,83 @@ class JobModel(db.Model):
     s3_uri = db.Column(db.Unicode(255), default=None)
 
     # Measurements are deleted upon job deletion
-    measurements = db.relationship("MeasurementModel", lazy="joined",
-                                   cascade="all, delete-orphan")
+    measurements = db.relationship(
+        "MeasurementModel", lazy="joined", cascade="all, delete-orphan"
+    )
 
     # Packages are deleted upon job deletion
-    packages = db.relationship("PackageModel", lazy="joined",
-                               cascade="all, delete-orphan")
+    packages = db.relationship(
+        "PackageModel", lazy="joined", cascade="all, delete-orphan"
+    )
 
     def __init__(self, env_id, env, meta):
 
         self.env_id = env_id
         # FIXME: DM-14538 Remove ci_dataset from job model
-        if 'ci_dataset' in env:
-            self.ci_dataset = env['ci_dataset']
-        elif 'dataset' in env:
-            self.ci_dataset = env['dataset']
+        if "ci_dataset" in env:
+            self.ci_dataset = env["ci_dataset"]
+        elif "dataset" in env:
+            self.ci_dataset = env["dataset"]
         # Preserve date from the env metadata if SQUASH is running
         # in ETL mode
-        if SQUASH_ETL_MODE and 'date' in env:
-            self.date_created = datetime.strptime(env['date'],
-                                                  "%Y-%m-%dT%H:%M:%SZ")
+        if SQUASH_ETL_MODE and "date" in env:
+            self.date_created = datetime.strptime(
+                env["date"], "%Y-%m-%dT%H:%M:%SZ"
+            )
 
         self.env = env
         self.meta = meta
 
     def json(self):
-
+        """Return JSON serialized job."""
         # Reconstruct the lsst.verify job metadata before returning
-        self.meta['packages'] = [pkg.json() for pkg in self.packages]
-        self.meta['env'] = self.env
+        self.meta["packages"] = [pkg.json() for pkg in self.packages]
+        self.meta["env"] = self.env
 
-        return {'id': self.id,
-                'date_created':
-                    self.date_created.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                'ci_dataset': self.ci_dataset,
-                's3_uri': self.s3_uri,
-                'measurements': [meas.json() for meas in
-                                 self.measurements],
-                'meta': self.meta}
+        return {
+            "id": self.id,
+            "date_created": self.date_created.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "ci_dataset": self.ci_dataset,
+            "s3_uri": self.s3_uri,
+            "measurements": [meas.json() for meas in self.measurements],
+            "meta": self.meta,
+        }
 
     @classmethod
     def find_by_id(cls, job_id):
+        """Find job by id."""
         return cls.query.filter_by(id=job_id).first()
 
     @classmethod
     def find_by_env_data(cls, env_id, **kwargs):
-
+        """Find job by environment ID."""
         query = cls.query.filter_by(env_id=env_id)
 
         for key, value in kwargs.items():
             expression = cls.env[key] == value
             query = query.filter(expression)
-
+        # TODO: not very useful if it returns just the first record.
+        # Review where this is used.
         return query.first()
 
     def save_to_db(self):
+        """Save job to database."""
         db.session.add(self)
         db.session.commit()
 
     def delete_from_db(self):
+        """Delete job from database."""
         db.session.delete(self)
         db.session.commit()
 
 
 class PackageModel(db.Model):
-    """A specific version of an eups package used
-    by the lsst.verify job
+    """A specific version of an eups package.
+
+    Store eups package version information used by jobs.
     """
-    __tablename__ = 'package'
+
+    __tablename__ = "package"
 
     id = db.Column(db.Integer, primary_key=True)
     # EUPS package name
@@ -320,10 +380,17 @@ class PackageModel(db.Model):
     # EUPS build version
     eups_version = db.Column(db.String(64))
 
-    job_id = db.Column(db.Integer, db.ForeignKey('job.id'))
+    job_id = db.Column(db.Integer, db.ForeignKey("job.id"))
 
-    def __init__(self, job_id, name, git_sha, git_url=None, git_branch=None,
-                 eups_version=None):
+    def __init__(
+        self,
+        job_id,
+        name,
+        git_sha,
+        git_url=None,
+        git_branch=None,
+        eups_version=None,
+    ):
 
         self.job_id = job_id
         self.name = name
@@ -333,43 +400,53 @@ class PackageModel(db.Model):
         self.eups_version = eups_version
 
     def json(self):
-        return {'name': self.name,
-                'git_sha': self.git_sha,
-                'git_url': self.git_url,
-                'git_branch': self.git_branch,
-                'eups_version': self.eups_version}
+        """Return JSON serialization of a package."""
+        return {
+            "name": self.name,
+            "git_sha": self.git_sha,
+            "git_url": self.git_url,
+            "git_branch": self.git_branch,
+            "eups_version": self.eups_version,
+        }
 
     @classmethod
     def find_by_job_id(cls, job_id):
+        """Find packages by job ID."""
         return cls.query.filter_by(job_id=job_id).first()
 
     def save_to_db(self):
+        """Save package to database."""
         db.session.add(self)
         db.session.commit()
 
     def delete_from_db(self):
+        """Delete package from database."""
         db.session.delete(self)
         db.session.commit()
 
 
 # Association table for measurements and blobs
-measurement_blob = db.Table('measurement_blob',
-                            db.Column('measurement_id',
-                                      db.Integer,
-                                      db.ForeignKey('measurement.id'),
-                                      primary_key=True),
-                            db.Column('blob_id',
-                                      db.Integer,
-                                      db.ForeignKey('blob.id'),
-                                      primary_key=True)
-                            )
+measurement_blob = db.Table(
+    "measurement_blob",
+    db.Column(
+        "measurement_id",
+        db.Integer,
+        db.ForeignKey("measurement.id"),
+        primary_key=True,
+    ),
+    db.Column(
+        "blob_id", db.Integer, db.ForeignKey("blob.id"), primary_key=True
+    ),
+)
 
 
 class MeasurementModel(db.Model):
-    """Database model for metric measurements as defined
-    in the lsst.verify package. See https://sqr-019.lsst.io/
+    """Database model for measurements.
+
+    See measurements in See https://sqr-019.lsst.io
     """
-    __tablename__ = 'measurement'
+
+    __tablename__ = "measurement"
 
     id = db.Column(db.Integer, primary_key=True)
     # Measurement value
@@ -381,15 +458,24 @@ class MeasurementModel(db.Model):
     # An empty string means an unitless quantity.
     unit = db.Column(db.String(16), nullable=False)
 
-    metric_id = db.Column(db.Integer, db.ForeignKey('metric.id'))
+    metric_id = db.Column(db.Integer, db.ForeignKey("metric.id"))
 
-    job_id = db.Column(db.Integer, db.ForeignKey('job.id'))
+    job_id = db.Column(db.Integer, db.ForeignKey("job.id"))
 
-    blobs = db.relationship('BlobModel', secondary=measurement_blob,
-                            lazy='dynamic')
+    blobs = db.relationship(
+        "BlobModel", secondary=measurement_blob, lazy="dynamic"
+    )
 
-    def __init__(self, job_id, metric_id, value=0, unit=None,
-                 metric='', identifier=None, blob_refs=None):
+    def __init__(
+        self,
+        job_id,
+        metric_id,
+        value=0,
+        unit=None,
+        metric="",
+        identifier=None,
+        blob_refs=None,
+    ):
 
         self.job_id = job_id
         self.metric_id = metric_id
@@ -404,31 +490,38 @@ class MeasurementModel(db.Model):
         self.unit = unit
 
     def json(self):
-        return {'value': self.value,
-                'unit': self.unit,
-                'metric': self.metric_name,
-                'blobs': [blob.json() for blob in self.blobs]}
+        """Return JSON serialized measurement."""
+        return {
+            "value": self.value,
+            "unit": self.unit,
+            "metric": self.metric_name,
+            "blobs": [blob.json() for blob in self.blobs],
+        }
 
     @classmethod
     def find_by_job_id(cls, job_id):
-        # A job can have multiple measurements
+        """Return measurements by job ID."""
         return cls.query.filter_by(job_id=job_id).all()
 
     def save_to_db(self):
+        """Save measurements to database."""
         db.session.add(self)
         db.session.commit()
 
     def delete_from_db(self):
+        """Delete measurements from database."""
         db.session.delete(self)
         db.session.commit()
 
 
 class BlobModel(db.Model):
-    """Database model for data blobs as defined
-    in the lsst.verify package. See https://sqr-019.lsst.io/
-    The data blobs are uploaded to S3 and referenced here.
+    """Database model for data blobs.
+
+    Keep reference for data blobs uploaded to S3. See blobs in
+    https://sqr-019.lsst.io/
     """
-    __tablename__ = 'blob'
+
+    __tablename__ = "blob"
 
     id = db.Column(db.Integer, primary_key=True)
     # Receives a string representation of python UUID object
@@ -441,23 +534,28 @@ class BlobModel(db.Model):
     s3_uri = db.Column(db.Unicode(255), default=None)
 
     def __init__(self, identifier, name):
-
         self.identifier = identifier
         self.name = name
 
     def json(self):
-        return {'identifier': self.identifier,
-                'name': self.name,
-                's3_uri': self.s3_uri}
+        """Return JSON serialized blob."""
+        return {
+            "identifier": self.identifier,
+            "name": self.name,
+            "s3_uri": self.s3_uri,
+        }
 
     @classmethod
     def find_by_identifier(cls, identifier):
+        """Find blobs by an identifier."""
         return cls.query.filter_by(identifier=identifier).all()
 
     def save_to_db(self):
+        """Save blob to database."""
         db.session.add(self)
         db.session.commit()
 
     def delete_from_db(self):
+        """Delete blob from the database."""
         db.session.delete(self)
         db.session.commit()

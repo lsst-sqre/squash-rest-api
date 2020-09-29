@@ -1,14 +1,17 @@
+"""Implement Celery task to upload SQuaSH jobs to S3."""
+
 import os
+
 import boto3
 import botocore
 
 from .celery import celery
 
-S3_BUCKET = os.environ.get('S3_BUCKET', 'squash-dev.data')
+S3_BUCKET = os.environ.get("S3_BUCKET", "squash-dev.data")
 
 
 def get_s3_uri(key):
-    """ Make an S3 URI string.
+    """Make an S3 URI string.
 
     Parameters
     ----------
@@ -27,15 +30,17 @@ def get_s3_uri(key):
 
 
 def download_object(s3_uri):
+    """Download an arbitrary S3 object.
 
-    # e.g. s3://squash.data/88c3f896fe2948788d56bdadfc468812
-    _, _, bucket, key = s3_uri.split('/')
+    Example of S3 URI: s3://squash.data/88c3f896fe2948788d56bdadfc468812
+    """
+    _, _, bucket, key = s3_uri.split("/")
 
-    s3 = boto3.resource('s3')
+    s3 = boto3.resource("s3")
 
     try:
         obj = s3.Object(bucket, key)
-        data = obj.get()['Body'].read()
+        data = obj.get()["Body"].read()
     except botocore.exceptions.ClientError:
         data = None
 
@@ -43,8 +48,9 @@ def download_object(s3_uri):
 
 
 @celery.task(bind=True)
-def upload_object(self, key, body, metadata=None, acl=None,
-                  content_type='application/json'):
+def upload_object(
+    self, key, body, metadata=None, acl=None, content_type="application/json"
+):
     """Upload an arbitrary object to an S3 bucket.
 
     Parameters
@@ -80,20 +86,20 @@ def upload_object(self, key, body, metadata=None, acl=None,
         The secret key for your AWS account.
 
     """
-    s3 = boto3.resource('s3')
+    s3 = boto3.resource("s3")
 
     object = s3.Object(S3_BUCKET, key)
 
     args = {}
 
     if metadata is not None:
-        args['Metadata'] = metadata
+        args["Metadata"] = metadata
     if acl is not None:
-        args['ACL'] = acl
+        args["ACL"] = acl
     if content_type is not None:
-        args['ContentType'] = content_type
+        args["ContentType"] = content_type
 
-    self.update_state(state='STARTED')
+    self.update_state(state="STARTED")
     object.put(Body=body, **args)
 
     s3_uri = get_s3_uri(key)

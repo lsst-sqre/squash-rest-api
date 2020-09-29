@@ -1,23 +1,17 @@
-from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
+from flask_restful import Resource, reqparse
 from sqlalchemy import func
 
-from ..models import SpecificationModel, MetricModel
+from ..models import MetricModel, SpecificationModel
 
 
 class Specification(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument('threshold',
-                        type=dict
-                        )
+    parser.add_argument("threshold", type=dict)
     # accept multiple values
     # http://flask-restful.readthedocs.io/en/0.3.5/reqparse.html
-    parser.add_argument('tags',
-                        type=str, action="append"
-                        )
-    parser.add_argument('metadata_query',
-                        type=dict
-                        )
+    parser.add_argument("tags", type=str, action="append")
+    parser.add_argument("metadata_query", type=dict)
 
     def get(self, name):
         """
@@ -42,7 +36,7 @@ class Specification(Resource):
         spec = SpecificationModel.find_by_name(name)
         if spec:
             return spec.json()
-        return {'message': 'Metric specification not found'}, 404
+        return {"message": "Metric specification not found"}, 404
 
     @jwt_required()
     def post(self, name):
@@ -85,11 +79,13 @@ class Specification(Resource):
 
         data = Specification.parser.parse_args()
 
-        if '.' in name:
-            metric_name = name.rsplit('.', 1)[0]
+        if "." in name:
+            metric_name = name.rsplit(".", 1)[0]
         else:
-            message = "You must provide a full qualified name for the" \
-                      " specification, e.g. validate_drp.AM1.minimum_gri."
+            message = (
+                "You must provide a full qualified name for the"
+                " specification, e.g. validate_drp.AM1.minimum_gri."
+            )
 
             return {"message": message}
 
@@ -100,18 +96,21 @@ class Specification(Resource):
             metric_id = metric.id
         else:
 
-            message = "Metric `{}` not found. You must provide a valid " \
-                      "name for the metric associated with this " \
-                      "specification.".format(metric_name)
+            message = (
+                "Metric `{}` not found. You must provide a valid "
+                "name for the metric associated with this "
+                "specification.".format(metric_name)
+            )
 
             return {"message": message}, 404
 
         if SpecificationModel.find_by_name(name):
 
-            message = "A specification with name `{}` already " \
-                      "exist.".format(name)
+            message = (
+                "A specification with name `{}` already " "exist.".format(name)
+            )
 
-            return {'message': message}, 400
+            return {"message": message}, 400
 
         spec = SpecificationModel(name, metric_id, **data)
 
@@ -168,11 +167,11 @@ class Specification(Resource):
 
         if not spec:
             message = "Specification `{}` not found.".format(name)
-            return {'message': message}, 404
+            return {"message": message}, 404
 
-        spec.threshold = data['threshold']
-        spec.tags = data['tags']
-        spec.metadata_query = data['metadata_query']
+        spec.threshold = data["threshold"]
+        spec.tags = data["tags"]
+        spec.metadata_query = data["metadata_query"]
 
         try:
             spec.save_to_db()
@@ -214,19 +213,16 @@ class Specification(Resource):
             return {"message": message}, 404
 
         spec.delete_from_db()
-        return {'message': 'Metric specification deleted.'}
+        return {"message": "Metric specification deleted."}
 
 
 class SpecificationList(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument("specs",
-                        type=dict,
-                        action="append"
-                        )
-    parser.add_argument('metric')
-    parser.add_argument('dataset_name')
-    parser.add_argument('filter_name')
-    parser.add_argument('tag')
+    parser.add_argument("specs", type=dict, action="append")
+    parser.add_argument("metric")
+    parser.add_argument("dataset_name")
+    parser.add_argument("filter_name")
+    parser.add_argument("tag")
 
     def get(self):
         """
@@ -266,30 +262,33 @@ class SpecificationList(Resource):
         queryset = SpecificationModel.query.join(MetricModel)
         args = self.parser.parse_args()
 
-        metric = args['metric']
+        metric = args["metric"]
         if metric:
             queryset = queryset.filter(MetricModel.name == metric)
 
-        dataset_name = args['dataset_name']
+        dataset_name = args["dataset_name"]
         if dataset_name:
-            expr = SpecificationModel.metadata_query['dataset_name'] \
+            expr = (
+                SpecificationModel.metadata_query["dataset_name"]
                 == dataset_name
+            )
             queryset = queryset.filter(expr)
 
-        filter_name = args['filter_name']
+        filter_name = args["filter_name"]
         if filter_name:
-            expr = SpecificationModel.metadata_query['filter_name'] \
-                == filter_name
+            expr = (
+                SpecificationModel.metadata_query["filter_name"] == filter_name
+            )
             queryset = queryset.filter(expr)
 
-        specification_tag = args['tag']
+        specification_tag = args["tag"]
         if specification_tag:
-            expr = func.json_contains(SpecificationModel.tags,
-                                      '"{}"'.format(specification_tag))
+            expr = func.json_contains(
+                SpecificationModel.tags, '"{}"'.format(specification_tag)
+            )
             queryset = queryset.filter(expr)
 
-        return {'specs': [spec.json() for spec
-                          in queryset.all()]}
+        return {"specs": [spec.json() for spec in queryset.all()]}
 
     @jwt_required()
     def post(self):
@@ -323,16 +322,18 @@ class SpecificationList(Resource):
             description: An error occurred creating a metric specification.
         """
 
-        specs = SpecificationList.parser.parse_args()['specs']
+        specs = SpecificationList.parser.parse_args()["specs"]
 
         for data in specs:
-            name = data.pop('name')
+            name = data.pop("name")
 
-            if '.' in name:
-                metric_name = name.rsplit('.', 1)[0]
+            if "." in name:
+                metric_name = name.rsplit(".", 1)[0]
             else:
-                message = "You must provide a full qualified name for the" \
-                          " specification, e.g. validate_drp.AM1.minimum_gri."
+                message = (
+                    "You must provide a full qualified name for the"
+                    " specification, e.g. validate_drp.AM1.minimum_gri."
+                )
 
                 return {"message": message}
 
@@ -342,27 +343,35 @@ class SpecificationList(Resource):
                 metric_id = metric.id
             else:
                 continue
-                message = "Metric `{}` not found. You must provide a valid " \
-                          "name for the metric associated with this " \
-                          "specification.".format(metric_name)
+                message = (
+                    "Metric `{}` not found. You must provide a valid "
+                    "name for the metric associated with this "
+                    "specification.".format(metric_name)
+                )
 
                 return {"message": message}, 400
 
             if SpecificationModel.find_by_name(name):
-                message = "A specification with name `{}` already " \
-                          "exist.".format(name)
+                message = (
+                    "A specification with name `{}` already "
+                    "exist.".format(name)
+                )
 
-                return {'message': message}, 400
+                return {"message": message}, 400
 
             spec = SpecificationModel(name, metric_id, **data)
 
             try:
                 spec.save_to_db()
             except Exception:
-                message = "An error ocurred creating this metric " \
-                          "specification `{}`.".format(name)
+                message = (
+                    "An error ocurred creating this metric "
+                    "specification `{}`.".format(name)
+                )
 
                 return {"message": message}, 500
 
-        return {"message": "List of metric specificationss successfully "
-                           "created."}, 201
+        return {
+            "message": "List of metric specificationss successfully "
+            "created."
+        }, 201

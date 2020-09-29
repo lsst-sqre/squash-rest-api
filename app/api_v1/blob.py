@@ -1,23 +1,26 @@
 import json
 
-from flask_restful import Resource, reqparse
-
 from app.tasks.s3 import download_object
+from flask_restful import Resource, reqparse
 
 from ..models import JobModel as Job
 
 
 class Blob(Resource):
     parser = reqparse.RequestParser()
-    parser.add_argument('metric',
-                        type=str,
-                        required=True,
-                        help="This field cannot be left blank.")
+    parser.add_argument(
+        "metric",
+        type=str,
+        required=True,
+        help="This field cannot be left blank.",
+    )
 
-    parser.add_argument('name',
-                        type=str,
-                        required=True,
-                        help="This field cannot be left blank.")
+    parser.add_argument(
+        "name",
+        type=str,
+        required=True,
+        help="This field cannot be left blank.",
+    )
 
     def get(self, job_id):
         """
@@ -51,9 +54,9 @@ class Blob(Resource):
 
         args = self.parser.parse_args()
 
-        metric = args['metric']
+        metric = args["metric"]
 
-        name = args['name']
+        name = args["name"]
 
         s3_uri = None
         for meas in job.measurements:
@@ -71,4 +74,4 @@ class Blob(Resource):
         if data:
             return json.loads(data)
 
-        return {'message': 'Data blob not found'}, 404
+        return {"message": "Data blob not found"}, 404

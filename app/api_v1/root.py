@@ -11,13 +11,32 @@ class Root(Resource):
     def get(self):
 
         # List of resources we want in the API root
-        endpoints = ['jenkins', 'job', 'jobs', 'metric', 'metrics', 'spec',
-                     'specs', 'measurement', 'measurements', 'register',
-                     'auth', 'user', 'users', 'stats', 'status', 'version',
-                     'blob', 'code_changes', 'datasets', 'kpms',
-                     'monitor', 'packages']
+        endpoints = [
+            "jenkins",
+            "job",
+            "jobs",
+            "metric",
+            "metrics",
+            "spec",
+            "specs",
+            "measurement",
+            "measurements",
+            "register",
+            "auth",
+            "user",
+            "users",
+            "stats",
+            "status",
+            "version",
+            "blob",
+            "code_changes",
+            "datasets",
+            "kpms",
+            "monitor",
+            "packages",
+        ]
 
-        root_url = url_for('root', _external=True)
+        root_url = url_for("root", _external=True)
 
         response = {key: root_url + key for key in endpoints}
 

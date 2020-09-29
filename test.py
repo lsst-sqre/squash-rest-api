@@ -1,6 +1,8 @@
-#!/usr/bin/env python
+"""Implement test runner."""
+
 import sys
 from unittest import TextTestRunner
+
 from tests import suite
 
 runner = TextTestRunner(verbosity=2)

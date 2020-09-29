@@ -1,8 +1,6 @@
-
+from app.tasks.s3 import upload_object
 from flask import jsonify
 from flask_restful import Resource
-
-from app.tasks.s3 import upload_object
 
 
 class Status(Resource):
@@ -30,20 +28,17 @@ class Status(Resource):
         """
         task = upload_object.AsyncResult(task_id)
 
-        if task.state == 'PENDING':
+        if task.state == "PENDING":
             # Upload task did not start yet
             response = {
-                'status': task.state,
+                "status": task.state,
             }
 
-        elif task.state != 'FAILURE':
+        elif task.state != "FAILURE":
             response = {
-                'status': task.state,
+                "status": task.state,
             }
         else:
             # Something went wrong in
-            response = {
-                'status': task.state,
-                'message': str(task.info)
-            }
+            response = {"status": task.state, "message": str(task.info)}
         return jsonify(response)

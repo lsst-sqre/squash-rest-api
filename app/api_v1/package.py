@@ -1,5 +1,5 @@
-from flask import jsonify
 from flask import current_app as app
+from flask import jsonify
 from flask_restful import Resource
 
 from ..models import MetricModel as Metric
@@ -22,4 +22,4 @@ class PackageList(Resource):
         except StopIteration:
             app.logger.warn("No packages found.")
 
-        return jsonify({'packages': packages})
+        return jsonify({"packages": packages})
