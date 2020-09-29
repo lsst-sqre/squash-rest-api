@@ -40,11 +40,8 @@ commands =
 description = Lint codebase by running pre-commit (Flake8, Black, isort).
 skip_install = true
 deps =
-    flake8
-    flake8-docstrings
     pre-commit
 commands =
-    flake8 app
     pre-commit run --all-files
 
 [testenv:docs]
@@ -99,3 +96,9 @@ multi_line_output = 3
 known_first_party = ["squash-api", "tests"]
 known_third_party = ["app", "boto3", "botocore", "celery", "click", "dateutil", "flasgger", "flask", "flask_jwt", "flask_restful", "flask_sqlalchemy", "numpy", "pytz", "requests", "setuptools", "sqlalchemy", "werkzeug"]
 skip = ["docs/conf.py"]
+
+
+[flake8]
+max-line-length = 79
+docstring-convention = "numpy"
+extend-exclude = "app/api_v1"
