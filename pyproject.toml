@@ -37,11 +37,15 @@ commands =
     mypy app tests setup.py
 
 [testenv:lint]
-description = Lint codebase by running pre-commit (Black, isort, Flake8).
+description = Lint codebase by running pre-commit (Flake8, Black, isort).
 skip_install = true
 deps =
+    flake8
+    flake8-docstrings
     pre-commit
-commands = pre-commit run --all-files
+commands =
+    flake8 app
+    pre-commit run --all-files
 
 [testenv:docs]
 description = Build documentation (HTML) with Sphinx.
