@@ -25,9 +25,18 @@ commands =
 [testenv:coverage-report]
 description = Compile coverage from each test run.
 skip_install = true
-deps = coverage[toml]>=5.0.2
-depends =
-    py37
+deps =
+  coverage[toml]>=5.0.2
+  flasgger==0.9.5
+  flask-jwt==0.3.2
+  flask-restful==0.3.8
+  boto3==1.15.1
+  celery[redis]==4.4.7
+  numpy==1.19.2
+  flask-sqlalchemy==2.4.4
+  requests==2.24.0
+  pymysql==0.10.1
+
 commands =
     coverage run --source=app test.py
 
