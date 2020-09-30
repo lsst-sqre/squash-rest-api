@@ -1,9 +1,0 @@
-sudo: true
-language: python
-matrix:
-  include:
-    - python: '3.7'
-install:
-  - make update
-script:
-  - flake8 app tests
