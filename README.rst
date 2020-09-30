@@ -30,11 +30,11 @@ Development workflow
  virtualenv venv -p python3
 
  # Activate the Flask cli and debugger in your environment
- echo "export FLASK_APP=run.py" >> venv/bin/activate
+ echo "export FLASK_APP=run:app" >> venv/bin/activate
  echo "export FLASK_ENV=development" >> venv/bin/activate
 
  source venv/bin/activate
- pip install -r requirements.txt
+ make update
 
 3. Initialize local instances of MySQL, Redis, and Celery for development
 
@@ -47,8 +47,9 @@ Development workflow
  <new terminal session>
  make redis
  <new terminal session>
- make celery # the celery task `app.tasks.s3.upload_object` requires the `AWS credentials present in the environment <https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html>`_, it uses the `s3://squash-dev.data/` S3 bucket by default and assume it was previously created.
-
+ # The celery task `app.tasks.s3.upload_object` requires the `AWS credentials present in the environment <https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html>`_
+ # It assumes the the `s3://squash-dev.data/` S3 bucket was previously created.
+ make celery
 
 4. Run the app locally:
 
@@ -56,7 +57,6 @@ Note that by default the app will run using the development config profile, whic
 
 .. code-block::
 
- export SQUASH_API_PROFILE=app.config.Development
  flask run
 
 Check the available commands with
