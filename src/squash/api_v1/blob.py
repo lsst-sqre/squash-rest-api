@@ -1,7 +1,8 @@
 import json
 
-from app.tasks.s3 import download_object
 from flask_restful import Resource, reqparse
+
+from squash.tasks.s3 import download_object
 
 from ..models import JobModel as Job
 

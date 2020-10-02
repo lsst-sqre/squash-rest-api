@@ -30,4 +30,4 @@ repos:
       additional_dependencies:
         - flake8-docstrings
       args: [--docstring-convention=numpy]
-      exclude: "app/api_v1/*"
+      exclude: "src/squash/api_v1/*"

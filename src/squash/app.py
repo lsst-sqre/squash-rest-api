@@ -1,30 +1,47 @@
-"""Implement the SQuaSH API application."""
+"""Create the squash-api app.
+
+To run the app in development mode set the following variables:
+
+    export SQUASH_API_PROFILE=app.config.Development
+    export FLASK_APP=app:app
+    export FLASK_ENV=development
+    flask run
+
+If FLASK_ENV is set to development, the flask command will enable debug mode
+and `flask run` will enable the interactive debugger and reloader.
+
+See app/config.py for the app configuration.
+"""
+
 
 __all__ = ["create_app"]
+
+import os
 
 from flasgger import Swagger
 from flask import Flask
 from flask_jwt import JWT
 from flask_restful import Api
 
-from .api_v1.blob import Blob
-from .api_v1.code_changes import CodeChanges
-from .api_v1.dataset import DatasetList
-from .api_v1.jenkins import Jenkins
-from .api_v1.job import Job, JobList, JobWithArg
-from .api_v1.kpms import Kpms
-from .api_v1.measurement import Measurement, MeasurementList
-from .api_v1.metric import Metric, MetricList
-from .api_v1.monitor import Monitor
-from .api_v1.package import PackageList
-from .api_v1.root import Root
-from .api_v1.specification import Specification, SpecificationList
-from .api_v1.stats import Stats
-from .api_v1.status import Status
-from .api_v1.user import Register, User, UserList
-from .api_v1.version import Version
-from .auth import authenticate, identity
-from .db import db
+from squash.api_v1.blob import Blob
+from squash.api_v1.code_changes import CodeChanges
+from squash.api_v1.dataset import DatasetList
+from squash.api_v1.jenkins import Jenkins
+from squash.api_v1.job import Job, JobList, JobWithArg
+from squash.api_v1.kpms import Kpms
+from squash.api_v1.measurement import Measurement, MeasurementList
+from squash.api_v1.metric import Metric, MetricList
+from squash.api_v1.monitor import Monitor
+from squash.api_v1.package import PackageList
+from squash.api_v1.root import Root
+from squash.api_v1.specification import Specification, SpecificationList
+from squash.api_v1.stats import Stats
+from squash.api_v1.status import Status
+from squash.api_v1.user import Register, User, UserList
+from squash.api_v1.version import Version
+from squash.auth import authenticate, identity
+from squash.db import db
+from squash.models import UserModel
 
 
 def create_app(profile):
@@ -123,3 +140,18 @@ def create_app(profile):
     api.add_resource(Stats, "/stats", endpoint="stats")
 
     return app
+
+
+profile = os.environ.get("SQUASH_API_PROFILE", "squash.config.Development")
+app = create_app(profile)
+
+with app.app_context():
+    db.create_all()
+
+    # create admin user
+    if UserModel.query.get(1) is None:
+        user = UserModel(
+            username=app.config["DEFAULT_USER"],
+            password=app.config["DEFAULT_PASSWORD"],
+        )
+        user.save_to_db()

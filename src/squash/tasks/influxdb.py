@@ -61,5 +61,4 @@ def job_to_influxdb(self, job_id, date_created, data):
 
     # Here we associate metrics (fields) to their corresponding
     # packages (measurements)
-
     pass

@@ -30,7 +30,7 @@ Development workflow
  virtualenv venv -p python3
 
  # Activate the Flask cli and debugger in your environment
- echo "export FLASK_APP=run:app" >> venv/bin/activate
+ echo "export FLASK_APP=squash.app:app" >> venv/bin/activate
  echo "export FLASK_ENV=development" >> venv/bin/activate
 
  source venv/bin/activate
@@ -58,12 +58,6 @@ Note that by default the app will run using the development config profile, whic
 .. code-block::
 
  flask run
-
-Check the available commands with
-
-.. code-block::
-
- flask --help
 
 The app will run at http://localhost:5000
 

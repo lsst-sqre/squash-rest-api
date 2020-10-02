@@ -1,14 +1,15 @@
 import json
 import warnings
 
-from app.decorators import time_this
-from app.error import ApiError
-from app.tasks.influxdb import job_to_influxdb
-from app.tasks.s3 import get_s3_uri, upload_object
 from flask import current_app as app
 from flask import url_for
 from flask_jwt import jwt_required
 from flask_restful import Resource, reqparse
+
+from squash.decorators import time_this
+from squash.error import ApiError
+from squash.tasks.influxdb import job_to_influxdb
+from squash.tasks.s3 import get_s3_uri, upload_object
 
 from ..models import (
     BlobModel,

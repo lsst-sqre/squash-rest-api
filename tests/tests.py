@@ -2,8 +2,8 @@
 
 import unittest
 
-from app import create_app, db
-from app.models import UserModel
+from squash.app import create_app, db
+from squash.models import UserModel
 
 from .test_client import TestClient
 
@@ -13,7 +13,7 @@ class TestAPI(unittest.TestCase):
 
     def setUp(self):
         """Set up test enviroment."""
-        self.app = create_app("app.config.Testing")
+        self.app = create_app("squash.config.Testing")
         self.context = self.app.app_context()
         self.context.push()
 

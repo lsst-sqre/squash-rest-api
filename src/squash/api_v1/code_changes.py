@@ -1,5 +1,6 @@
-from app.decorators import time_this
 from flask_restful import Resource, reqparse
+
+from squash.decorators import time_this
 
 from ..models import EnvModel as Env
 from ..models import JobModel as Job

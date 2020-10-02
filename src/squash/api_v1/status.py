@@ -1,6 +1,7 @@
-from app.tasks.s3 import upload_object
 from flask import jsonify
 from flask_restful import Resource
+
+from squash.tasks.s3 import upload_object
 
 
 class Status(Resource):
