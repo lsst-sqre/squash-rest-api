@@ -1,0 +1,97 @@
+# Defines the mapping from SQuaSH to InfluxDB.
+#
+# Each element is a SQuaSH key mapped to an InfluxDB key, schema specfies if
+# the key is written as an InfluxDB tag or field. It is possible to specify
+# a transformation for the value too (optional).
+#
+# By default, is the SQuaSH key is not present in the mapping
+# it is added to InfluxDB as a tag using the same name as the SQuaSH key.
+# If the InlfuxDB key is left blank, it means the that the SQuaSH key should
+# not be used.
+
+ci_id:
+  key: run_id
+  schema: field
+  transformation:
+
+run_id:
+  key: run_id
+  schema: field
+  transformation:
+
+id:
+  key: squash_id
+  schema: field
+  transformation:
+
+url:
+  key: squash_url
+  schema: field
+  transformation: "Formatter.format_link(data['id'], value)"
+
+# Uniformize the name for execution environment URL
+run_id_url:
+  key: run_url
+  schema: field
+  transformation: "Formatter.format_link(data['run_id'], value)"
+
+ci_url:
+  key: run_url
+  schema: field
+  transformation: "Formatter.format_link(data['ci_id'], value)"
+
+# Uniformize the name for the processed dataset
+ci_dataset:
+  key: dataset
+  schema: tag
+  transformation:
+
+version_tag:
+  key: version_tag
+  schema: field
+  transformation:
+
+physical_filter:
+  key: filter
+  schema: tag
+  transformation:
+
+filter_name:
+  key: filter
+  schema: tag
+  transformation:
+
+date_created:
+  key: timestamp
+  schema: field
+  transformation: "Formatter.format_timestamp(value)"
+
+date:
+  key:
+  schema:
+  transformation:
+
+ci_label:
+  key:
+  schema:
+  transformation:
+
+ci_name:
+  key: pipeline
+  schema: tag
+  transformation:
+
+code_changes:
+  key: code_changes
+  schema: field
+  transformation: "self.format_code_changes(data['ci_id'], data['ci_name'])"
+
+code_changes_counts:
+  key: code_changes_counts
+  schema: field
+  transformation: "self.format_code_changes_counts(data['ci_id'], data['ci_name'])"
+
+packages:
+  key:
+  schema:
+  transformation:

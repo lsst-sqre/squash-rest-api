@@ -1,18 +1,24 @@
+"""Implement tests for the squash-api endpoints."""
+
 import unittest
-from app import create_app, db
-from app.models import UserModel
+
+from squash.app import create_app, db
+from squash.models import UserModel
+
 from .test_client import TestClient
 
 
 class TestAPI(unittest.TestCase):
+    """Implement test set up and tear down methods."""
 
     def setUp(self):
-        self.app = create_app('app.config.Testing')
+        """Set up test enviroment."""
+        self.app = create_app("squash.config.Testing")
         self.context = self.app.app_context()
         self.context.push()
 
-        self.user = self.app.config['DEFAULT_USER']
-        self.password = self.app.config['DEFAULT_PASSWORD']
+        self.user = self.app.config["DEFAULT_USER"]
+        self.password = self.app.config["DEFAULT_PASSWORD"]
 
         # refresh testing db
         db.drop_all()
@@ -26,140 +32,140 @@ class TestAPI(unittest.TestCase):
         self.client = TestClient(self.app)
 
         # set an authentication token for the client
-        user = {'username': self.user, 'password': self.password}
-        r, json = self.client.post('/auth', data=user)
-        self.client.set_auth(json['access_token'])
+        user = {"username": self.user, "password": self.password}
+        r, json = self.client.post("/auth", data=user)
+        self.client.set_auth(json["access_token"])
 
     def tearDown(self):
+        """Tear down test environment."""
         db.session.remove()
         db.drop_all()
         self.context.pop()
 
     def test_root(self):
-
+        """Test /root endpoint."""
         # test API root url
-        r, json = self.client.get('/')
+        r, json = self.client.get("/")
         self.assertTrue(r.status_code == 200)
 
     def test_user(self):
-
+        """Test /user endpoint."""
         # get list of users
-        r, json = self.client.get('/users')
+        r, json = self.client.get("/users")
         self.assertTrue(r.status_code == 200)
-        self.assertTrue(json['users'] == [self.user])
+        self.assertTrue(json["users"] == [self.user])
 
         # register an user
-        data = {'username': 'bob', 'password': 'cat'}
-        r, json = self.client.post('/register', data=data)
+        data = {"username": "bob", "password": "cat"}
+        r, json = self.client.post("/register", data=data)
         self.assertTrue(r.status_code == 201)
 
         # register an user that already exists
-        data = {'username': 'bob', 'password': 'cat'}
-        r, json = self.client.post('/register', data=data)
+        data = {"username": "bob", "password": "cat"}
+        r, json = self.client.post("/register", data=data)
         self.assertTrue(r.status_code == 400)
 
         # get an authentication token for a registered user
-        r, json = self.client.post('/auth', data=data)
+        r, json = self.client.post("/auth", data=data)
         self.assertTrue(r.status_code == 200)
 
         # delete an user
-        r, json = self.client.delete('/user/bob')
+        r, json = self.client.delete("/user/bob")
         self.assertTrue(r.status_code == 200)
 
     def test_metric(self):
-
+        """Test metric endpoint."""
         # get list of metrics
-        r, json = self.client.get('/metrics')
+        r, json = self.client.get("/metrics")
         self.assertTrue(r.status_code == 200)
-        self.assertTrue(json['metrics'] == [])
+        self.assertTrue(json["metrics"] == [])
 
         # add a metric
-        data = {'description': 'string',
-                'tags': ['a', 'b', 'c']}
-        r, json = self.client.post('/metric/demo.m1', data=data)
+        data = {"description": "string", "tags": ["a", "b", "c"]}
+        r, json = self.client.post("/metric/demo.m1", data=data)
         self.assertTrue(r.status_code == 201)
 
         # delete a metric
-        r, json = self.client.delete('/metric/demo.m1')
+        r, json = self.client.delete("/metric/demo.m1")
         self.assertTrue(r.status_code == 200)
-        r, json = self.client.get('/metric/demo.m1')
+        r, json = self.client.get("/metric/demo.m1")
         self.assertTrue(r.status_code == 404)
 
         # get a metric that does not exist
-        r, json = self.client.get('/metric/demo.m1')
+        r, json = self.client.get("/metric/demo.m1")
         self.assertTrue(r.status_code == 404)
 
     def test_job(self):
-
+        """Test /job endpoint."""
         data = {
-            'measurements': [],
-            'blobs': [],
-            'meta': {
-                'ci_name': 'string',
-                'ci_dataset': 'string',
-                'ci_url': 'string',
-                'env': {'env_name': 'string'},
-                'packages': []
-            }
+            "measurements": [],
+            "blobs": [],
+            "meta": {
+                "ci_name": "string",
+                "ci_dataset": "string",
+                "ci_url": "string",
+                "env": {"env_name": "string"},
+                "packages": [],
+            },
         }
 
         # add a job
-        r, json = self.client.post('/job', data=data)
+        r, json = self.client.post("/job", data=data)
         self.assertTrue(r.status_code == 202)
 
         # delete a job
-        r, json = self.client.delete('/job/1')
+        r, json = self.client.delete("/job/1")
         self.assertTrue(r.status_code == 200)
 
         # delete a job that does not exist
-        r, json = self.client.delete('/job/1')
+        r, json = self.client.delete("/job/1")
         self.assertTrue(r.status_code == 404)
 
     def test_measurement(self):
-
+        """Test /measurement endpoint."""
         # add a metric
-        data = {'description': 'string'}
+        data = {"description": "string"}
 
-        r, json = self.client.post('/metric/demo.m1', data=data)
+        r, json = self.client.post("/metric/demo.m1", data=data)
         self.assertTrue(r.status_code == 201)
 
         data = {
-            'measurements': [],
-            'blobs': [],
-            'meta': {
-                'ci_name': 'string',
-                'ci_dataset': 'string',
-                'ci_url': 'string',
-                'env': {'env_name': 'string'},
-                'packages': []
-            }
+            "measurements": [],
+            "blobs": [],
+            "meta": {
+                "ci_name": "string",
+                "ci_dataset": "string",
+                "ci_url": "string",
+                "env": {"env_name": "string"},
+                "packages": [],
+            },
         }
 
         # add a job
-        r, json = self.client.post('/job', data=data)
+        r, json = self.client.post("/job", data=data)
         self.assertTrue(r.status_code == 202)
 
         # add measurement
-        data = {'value': 1.0, 'metric': 'demo.m1', 'unit': 'unknown'}
+        data = {"value": 1.0, "metric": "demo.m1", "unit": "unknown"}
 
-        r, json = self.client.post('/measurement/1', data=data)
+        r, json = self.client.post("/measurement/1", data=data)
         self.assertTrue(r.status_code == 201)
 
         # add another measurement for an existing job
-        data = {'value': 2.0, 'metric': 'demo.m1', 'unit': 'unknown'}
+        data = {"value": 2.0, "metric": "demo.m1", "unit": "unknown"}
 
-        r, json = self.client.post('/measurement/1', data=data)
+        r, json = self.client.post("/measurement/1", data=data)
         self.assertTrue(r.status_code == 201)
 
         # get measurements from an existing job
-        r, json = self.client.get('/measurement/1')
+        r, json = self.client.get("/measurement/1")
         self.assertTrue(r.status_code == 200)
 
         # get measurements from a job that does not exist
-        r, json = self.client.get('/measurement/2')
+        r, json = self.client.get("/measurement/2")
         self.assertTrue(r.status_code == 404)
 
     def test_apidocs(self):
-
-        r, json = self.client.get('/apispec_1.json')
+        """Test /apidocs endpoint."""
+        r, json = self.client.get("/apispec_1.json")
         self.assertTrue(r.status_code == 200)
