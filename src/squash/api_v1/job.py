@@ -181,12 +181,12 @@ class Job(Resource):
             app.logger.error(err.message)
             return {"message": err.message}, err.status_code
 
-        # async task
+        # async celery task
         try:
-            self.save_job_to_influxdb(job_id)
-        except ApiError as err:
-            app.logger.error(err.meassage)
-            return {"message": err.meassage}, err.status_code
+            task = job_to_influxdb.delay(job_id)
+        except ApiError:
+            app.logger.error(meassage)
+            return {"message": meassage}, status_code
 
         # see DM-16391 for improving task status report
         message = "Request for creating Job `{}` received".format(job_id)
@@ -405,27 +405,6 @@ class Job(Resource):
                             "the S3 URI location.",
                             500,
                         )
-
-    @time_this
-    def save_job_to_influxdb(self, job_id):
-        """Save verification job to InfluxDB
-
-        Parameters
-        ----------
-        job_id : `int`
-            id of the job object previously created.
-        """
-        data = self.data
-
-        date_created = None
-
-        job = JobModel.find_by_id(job_id)
-
-        if job:
-            date_created = job.date_created.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-        # async celery task
-        job_to_influxdb.delay(job_id, date_created, data)
 
 
 class JobList(Resource):

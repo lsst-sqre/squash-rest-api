@@ -64,7 +64,7 @@ redis:
 	docker run --rm --name redis -p 6379:6379 redis
 
 celery: check-aws-credentials
-	celery -A app.tasks -E -l DEBUG worker
+	celery -A squash.tasks -E -l DEBUG worker
 
 run: test
 	flask run
