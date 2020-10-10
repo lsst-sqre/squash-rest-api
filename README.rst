@@ -25,9 +25,14 @@ Development workflow
 
 2. Install the dependencies
 
+.. code-block::
+
  virtualenv venv -p python3
 
- # Activate the Flask cli and debugger in your environment
+Activate the Flask app and set development mode in your environment
+
+.. code-block::
+
  echo "export FLASK_APP=squash.app:app" >> venv/bin/activate
  echo "export FLASK_ENV=development" >> venv/bin/activate
 
