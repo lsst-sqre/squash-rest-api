@@ -1,0 +1,1 @@
+"""squash-api funtional tests."""
