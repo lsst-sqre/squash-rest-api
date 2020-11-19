@@ -8,17 +8,25 @@ __all__ = ["Config"]
 import os
 from datetime import timedelta
 
-SQUASH_DB_USER = os.environ.get("SQUASH_DB_USER", "root")
-SQUASH_DB_PASSWORD = os.environ.get("SQUASH_DB_PASSWORD", "squash")
-
 
 class Config(object):
     """Base class configuration."""
 
     APP_DIR = os.path.abspath(os.path.dirname(__file__))
 
+    # DB admin user credentials
+    SQUASH_DB_USER = os.environ.get("SQUASH_DB_USER", "root")
+    SQUASH_DB_PASSWORD = os.environ.get("SQUASH_DB_PASSWORD", "squash")
+
+    # Default API user credentials
+    DEFAULT_USER = os.environ.get("SQUASH_DEFAULT_USER", "mole")
+    DEFAULT_PASSWORD = os.environ.get("SQUASH_DEFAULT_PASSWORD", "desert")
+
     # Turn off the Flask-SQLAlchemy event system
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Flass APP debug mode
+    DEBUG = True
 
     # Secret key for signing cookies
     SECRET_KEY = os.environ.get("SECRET_KEY", os.urandom(32))
@@ -38,18 +46,13 @@ class Config(object):
 class Production(Config):
     """Production configuration."""
 
-    DEBUG = False
-
-    # Default (admin) user
-    DEFAULT_USER = os.environ.get("SQUASH_DEFAULT_USER")
-    DEFAULT_PASSWORD = os.environ.get("SQUASH_DEFAULT_PASSWORD")
-
-    # Because the cloudsql-proxy containter runs in the same pod,
+    # Because the cloudsql-proxy containter runs in the same pod as the app,
     # it appears to the application as localhost
     SQLALCHEMY_DATABASE_URI = "mysql+pymysql://{}:{}@127.0.0.1/squash".format(
-        SQUASH_DB_USER, SQUASH_DB_PASSWORD
+        Config.SQUASH_DB_USER, Config.SQUASH_DB_PASSWORD
     )
 
+    DEBUG = False
     SQLALCHEMY_ECHO = False
     PREFERRED_URL_SCHEME = "https"
 
@@ -60,15 +63,9 @@ class Production(Config):
 class Development(Config):
     """Development configuration."""
 
-    DEBUG = True
-
-    # Default (dev) user
-    DEFAULT_USER = "mole"
-    DEFAULT_PASSWORD = "desert"
-
     SQLALCHEMY_DATABASE_URI = (
-        "mysql+pymysql://{}:{}@127.0.0.1/squash_dev".format(
-            SQUASH_DB_USER, SQUASH_DB_PASSWORD
+        "mysql+pymysql://{}:{}@127.0.0.1/squash_local".format(
+            Config.SQUASH_DB_USER, Config.SQUASH_DB_PASSWORD
         )
     )
 
@@ -76,18 +73,20 @@ class Development(Config):
 
 
 class Testing(Config):
-    """Configuration for testing client."""
+    """Testing configuration."""
 
-    DEBUG = True
+    # Bcrypt algorithm hashing rounds (reduced for testing purposes only!)
+    BCRYPT_LOG_ROUNDS = 4
 
-    # Default (testing) user
-    DEFAULT_USER = "mole"
-    DEFAULT_PASSWORD = "desert"
+    # Enable the TESTING flag to disable the error catching during request
+    # handling so that you get better error reports when performing test
+    # requests against the application.
+    TESTING = True
 
     SQLALCHEMY_DATABASE_URI = (
-        "mysql+pymysql://{}:{}@127.0.0.1/squash_test".format(
-            SQUASH_DB_USER, SQUASH_DB_PASSWORD
+        "mysql+pymysql://{}:{}@127.0.0.1/squash_local".format(
+            Config.SQUASH_DB_USER, Config.SQUASH_DB_PASSWORD
         )
     )
 
-    SQLALCHEMY_ECHO = False
+    SQLALCHEMY_ECHO = True
