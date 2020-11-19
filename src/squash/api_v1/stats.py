@@ -20,7 +20,10 @@ class Stats(Resource):
         stats = {}
 
         last_job = Job.query.order_by(Job.id.desc()).first()
-        last_job_date = last_job.date_created.strftime("%Y-%m-%d %H:%M:%S")
+
+        last_job_date = str()
+        if last_job:
+            last_job_date = last_job.date_created.strftime("%Y-%m-%d %H:%M:%S")
         number_of_jobs = Job.query.count()
         number_of_metrics = Metric.query.count()
         number_of_measurements = Measurement.query.count()
