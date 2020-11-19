@@ -28,7 +28,6 @@ from squash.api_v1.code_changes import CodeChanges
 from squash.api_v1.dataset import DatasetList
 from squash.api_v1.jenkins import Jenkins
 from squash.api_v1.job import Job, JobList, JobWithArg
-from squash.api_v1.kpms import Kpms
 from squash.api_v1.measurement import Measurement, MeasurementList
 from squash.api_v1.metric import Metric, MetricList
 from squash.api_v1.monitor import Monitor
@@ -133,7 +132,6 @@ def create_app(profile):
     api.add_resource(
         CodeChanges, "/code_changes/<string:ci_id>", endpoint="code_changes"
     )
-    api.add_resource(Kpms, "/kpms", endpoint="kpms")
 
     # Miscellaneous
     api.add_resource(Version, "/version", endpoint="version")
