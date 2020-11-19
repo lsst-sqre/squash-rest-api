@@ -51,7 +51,7 @@ class UserModel(db.Model):
     def verify_password(self, password):
         """Verify the user password.
 
-        Verify passward against the password hash saved in the database.
+        Verify password against the password hash saved in the database.
         """
         return check_password_hash(self.password_hash, password)
 
