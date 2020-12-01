@@ -2,7 +2,7 @@
 
 To run the app in development mode set the following variables:
 
-    export SQUASH_API_PROFILE=app.config.Development
+    export SQUASH_API_PROFILE=squash.config.Development
     export FLASK_APP=app:app
     export FLASK_ENV=development
     flask run
@@ -28,7 +28,6 @@ from squash.api_v1.code_changes import CodeChanges
 from squash.api_v1.dataset import DatasetList
 from squash.api_v1.jenkins import Jenkins
 from squash.api_v1.job import Job, JobList, JobWithArg
-from squash.api_v1.kpms import Kpms
 from squash.api_v1.measurement import Measurement, MeasurementList
 from squash.api_v1.metric import Metric, MetricList
 from squash.api_v1.monitor import Monitor
@@ -40,7 +39,6 @@ from squash.api_v1.status import Status
 from squash.api_v1.user import Register, User, UserList
 from squash.api_v1.version import Version
 from squash.auth import authenticate, identity
-from squash.db import db
 from squash.models import UserModel
 
 
@@ -61,8 +59,21 @@ def create_app(profile):
     app = Flask(__name__)
     app.config.from_object(profile)
 
-    # initialize extensions
+    # initialize the database
+    from squash.models import db
+
     db.init_app(app)
+
+    with app.app_context():
+        db.create_all()
+
+        # create admin user
+        if UserModel.query.get(1) is None:
+            user = UserModel(
+                username=app.config["DEFAULT_USER"],
+                password=app.config["DEFAULT_PASSWORD"],
+            )
+            user.save_to_db()
 
     # add authentication route /auth
     JWT(app, authenticate, identity)
@@ -133,7 +144,6 @@ def create_app(profile):
     api.add_resource(
         CodeChanges, "/code_changes/<string:ci_id>", endpoint="code_changes"
     )
-    api.add_resource(Kpms, "/kpms", endpoint="kpms")
 
     # Miscellaneous
     api.add_resource(Version, "/version", endpoint="version")
@@ -143,15 +153,6 @@ def create_app(profile):
 
 
 profile = os.environ.get("SQUASH_API_PROFILE", "squash.config.Development")
-app = create_app(profile)
 
-with app.app_context():
-    db.create_all()
-
-    # create admin user
-    if UserModel.query.get(1) is None:
-        user = UserModel(
-            username=app.config["DEFAULT_USER"],
-            password=app.config["DEFAULT_PASSWORD"],
-        )
-        user.save_to_db()
+if profile in ["squash.config.Development", "squash.config.Production"]:
+    app = create_app(profile)
