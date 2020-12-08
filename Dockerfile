@@ -41,13 +41,8 @@ FROM base-image AS install-image
 COPY --from=dependencies-image /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-COPY . /opt/squash
-WORKDIR /opt/squash
-
-# libmysqlclient-dev adds mysql_config which is needed by mysqlclient
-# gcc is required to compile mysqlclient and uwsgi
-RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y default-libmysqlclient-dev gcc netcat
+COPY . /app
+WORKDIR /app
 
 RUN pip install --no-cache-dir .
 
