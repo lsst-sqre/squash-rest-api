@@ -55,11 +55,15 @@ WORKDIR /home/uwsgi
 # Make sure we use the virtualenv
 ENV PATH="/opt/venv/bin:$PATH"
 
+# Copy the virtualenv
 COPY --from=install-image /opt/venv /opt/venv
+
+# Copy uwsgi configuration file
+COPY uwsgi.ini ./
 
 # Switch to non-root user
 USER uwsgi
 
 EXPOSE 5000
 
-CMD uwsgi uwsgi.ini
+ENTRYPOINT ["uwsgi", "uwsgi.ini"]
