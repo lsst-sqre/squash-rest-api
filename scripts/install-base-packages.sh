@@ -26,8 +26,9 @@ apt-get update
 # Install security updates:
 apt-get -y upgrade
 
-# Example of installing a new package, without unnecessary packages:
-apt-get -y install --no-install-recommends git
+# libmysqlclient-dev adds mysql_config which is needed by mysqlclient
+# gcc is required to compile mysqlclient and uwsgi
+apt-get -y install --no-install-recommends default-libmysqlclient-dev gcc netcat
 
 # Delete cached files we don't need anymore:
 apt-get clean
