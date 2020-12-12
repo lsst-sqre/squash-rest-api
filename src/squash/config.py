@@ -22,6 +22,17 @@ class Config(object):
     DEFAULT_USER = os.environ.get("SQUASH_DEFAULT_USER", "mole")
     DEFAULT_PASSWORD = os.environ.get("SQUASH_DEFAULT_PASSWORD", "desert")
 
+    # InfluxDB instance
+    INFLUXDB_API_URL = os.environ.get("INFLUXDB_API_URL", "localhost:8086")
+    INFLUXDB_DATABASE = os.environ.get("INFLUXDB_DATABASE", "squash-local")
+
+    # InfluxDB credentials
+    INFLUXDB_USERNAME = os.environ.get("INFLUXDB_USERNAME")
+    INFLUXDB_PASSWORD = os.environ.get("INFLUXDB_PASSWORD")
+
+    # SQuaSH API URL
+    SQUASH_API_URL = os.environ.get("SQUASH_API_URL", "localhost:5000")
+
     # Turn off the Flask-SQLAlchemy event system
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 

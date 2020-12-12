@@ -6,6 +6,7 @@ __all__ = [
     "job_to_influxdb",
 ]
 
+import importlib
 import logging
 import os
 
@@ -15,9 +16,11 @@ from requests.exceptions import ConnectionError, HTTPError
 from .celery import celery
 from .utils.transformation import Transformer
 
-INFLUXDB_API_URL = os.environ.get("INFLUXDB_API_URL")
-INFLUXDB_DATABASE = os.environ.get("INFLUXDB_DATABASE")
-SQUASH_API_URL = os.environ.get("SQUASH_API_URL")
+profile = os.environ.get("SQUASH_API_PROFILE", "squash.config.Development")
+
+cls = profile.split(".")[2]
+
+config = getattr(importlib.import_module("squash.config"), cls)()
 
 logger = logging.getLogger("squash")
 
@@ -87,14 +90,17 @@ def job_to_influxdb(self, job_id):
         200 or 204: The request was processed successfully
         400: Malformed syntax or bad query
     """
-    status_code = create_influxdb_database(INFLUXDB_DATABASE, INFLUXDB_API_URL)
+    status_code = create_influxdb_database(
+        config.INFLUXDB_DATABASE, config.INFLUXDB_API_URL
+    )
 
     if status_code != 200:
         message = "Could not create InfluxDB database."
         return message, status_code
 
     # Get job data from the SQuaSH API
-    url = f"{SQUASH_API_URL}/job/{job_id}"
+    squash_api_url = config.SQUASH_API_URL
+    url = f"{squash_api_url}/job/{job_id}"
 
     try:
         r = requests.get(url=url)
@@ -103,7 +109,7 @@ def job_to_influxdb(self, job_id):
         message = f"Could not get job {job_id} from the SQuaSH API."
         logger.error(message)
     except ConnectionError:
-        message = f"Failed to establish connection with {SQUASH_API_URL}."
+        message = f"Failed to establish connection with {squash_api_url}."
         logger.error(message)
 
     status_code = r.status_code
@@ -113,13 +119,13 @@ def job_to_influxdb(self, job_id):
         return message, status_code
 
     data = r.json()
-    transformer = Transformer(squash_api_url=SQUASH_API_URL, data=data)
+    transformer = Transformer(squash_api_url=squash_api_url, data=data)
 
     influxdb_lines = transformer.to_influxdb_line()
 
     for line in influxdb_lines:
         status_code = write_influxdb_line(
-            line, INFLUXDB_DATABASE, INFLUXDB_API_URL
+            line, config.INFLUXDB_DATABASE, config.INFLUXDB_API_URL
         )
 
         if status_code != 204:
