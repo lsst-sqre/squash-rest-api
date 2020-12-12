@@ -16,3 +16,21 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: squash
       MYSQL_DATABASE: squash_local
+
+  influxdb:
+    image: influxdb:1.8.3
+    volumes:
+      - ./data/influxdb:/var/lib/influxdb
+    ports:
+      - "8086:8086"
+
+  # Run chronograf on a different port to avoid
+  # collision with Jupyter server.
+  chronograf:
+    image: chronograf:1.8.8
+    environment:
+      INFLUXDB_URL: http://influxdb:8086
+    ports:
+      - "8087:8888"
+    links:
+      - influxdb
