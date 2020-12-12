@@ -1,5 +1,6 @@
 # Project specific files
 kubernetes/deployment.yaml
+data/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
