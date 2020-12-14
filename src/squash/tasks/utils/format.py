@@ -96,7 +96,6 @@ class Formatter:
             logger.error(message)
 
         code_changes = r.json()
-        print(code_changes)
         return code_changes
 
     def format_code_changes(self, ci_id, ci_name):
@@ -122,7 +121,7 @@ class Formatter:
             git_sha = pkg[1]
             git_url = pkg[2]
             git_commit_url = git_url.replace(".git", "/commit/") + git_sha
-            formatted_url = Formatter.format_url(name, git_commit_url)
+            formatted_url = Formatter.format_link(name, git_commit_url)
             formatted_code_changes.append(formatted_url)
 
         return ", ".join(formatted_code_changes)
