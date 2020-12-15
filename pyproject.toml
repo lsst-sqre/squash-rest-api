@@ -21,7 +21,7 @@ deps =
     -r{toxinidir}/requirements/dev.txt
 
 setenv =
-    SQUASH_API_PROFILE = "squash.config.Testing"
+    SQUASH_API_PROFILE=squash.config.Testing
 commands =
     coverage run -m pytest {posargs}
 
