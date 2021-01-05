@@ -157,7 +157,9 @@ class Transformer(Formatter):
         # Add ci_name until DM-18599 is not implemented
         if "ci_url" in self.data["meta"]["env"].keys():
 
-            if "validate_drp" in self.data["meta"]["env"]["ci_url"]:
+            if "validate_drp_gen3" in self.data["meta"]["env"]["ci_url"]:
+                self.data["meta"]["env"]["ci_name"] = "validate_drp_gen3"
+            elif "validate_drp" in self.data["meta"]["env"]["ci_url"]:
                 self.data["meta"]["env"]["ci_name"] = "validate_drp"
             elif "ap_verify" in self.data["meta"]["env"]["ci_url"]:
                 self.data["meta"]["env"]["ci_name"] = "ap_verify"

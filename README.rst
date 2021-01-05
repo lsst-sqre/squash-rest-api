@@ -39,7 +39,7 @@ Activate the Flask app and set development mode in your environment
  source venv/bin/activate
  make update
 
-3. Initialize local instances of MySQL, Redis for development/testing
+3. Initialize local instances of MySQL, Redis, InfluxDB and Chronograf for development/testing
 
 .. code-block::
 
@@ -54,10 +54,18 @@ Note that by default the app will run using the development config profile, whic
 
 .. code-block::
 
+ export SQUASH_API_PROFILE="squash.config.Development"
  flask run
 
 
 The app will run at http://localhost:5000
+
+On another terminal start the Celery worker:
+
+.. code-block::
+
+ celery -A squash.tasks -E -l DEBUG worker
+
 
 5. Run tests
 
