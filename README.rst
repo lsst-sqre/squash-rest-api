@@ -2,7 +2,7 @@
 SQuaSH API
 ##########
 
-RESTful API for managing SQuaSH metrics. You can learn more about SQuaSH in `SQR-009 <https://sqr-009.lsst.io>`_.
+RESTful API for managing Science Pipelines metrics. You can learn more about SQuaSH in `SQR-009 <https://sqr-009.lsst.io>`_.
 
 
 Deployment
